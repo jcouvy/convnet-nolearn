@@ -1,2 +1,2 @@
-# convnet-nolearn
-Experiment with convolutional nets for beginners in Machine Learning.
+# Convolutional Neural Networks w/ Nolearn
+Experiment with convolutional nets realized by a beginner to help share with others.
