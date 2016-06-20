@@ -43,7 +43,7 @@
 <span class="pl-k">from</span> lasagne <span class="pl-k">import</span> layers <span class="pl-c">#this allows us to use each pre-defined layer.</span>
 <span class="pl-k">from</span> nolearn.lasagne <span class="pl-k">import</span> NeuralNet <span class="pl-c">#used to implement your net in a very simple fashion.</span></pre></div>
 
-<p>We need to initialize out network just like a variable, let's name it <code>net0</code>. The initialization is divided in two steps:</p>
+<p>We need to initialize our network just like a variable, let's name it <code>net0</code>. The initialization is divided in two steps:</p>
 
 <ul>
 <li>Describe the network architecture (i.e: layer composition)</li>
@@ -60,7 +60,7 @@
 
 <p><strong>Bear in mind that you need to use the pre-defined parameters name or an error will occur</strong></p>
 
-<p>You are probably not yet familiar with each different layers, no worries we are going to cover that right now. Every single available layer is already implemented in Lasagne and that's good news. Those libraries are still young but their documentation are rich and the community is helpful, the following link will get you to the <a href="https://lasagne.readthedocs.io/en/latest/modules/layers.html">Lasagne official documentation</a> where each layer is described.</p>
+<p>You are probably not yet familiar with each different layers, no worries we are going to cover that right now. Every single available layer is already implemented in Lasagne and that's good news. Despite being young its documentation is rich and the community is helpful, the following link will get you to the <a href="https://lasagne.readthedocs.io/en/latest/modules/layers.html">Lasagne official documentation</a> where each layer is described.</p>
 
 <p>Now that we have the doc opened we can start playing with <code>net0</code> :</p>
 
@@ -85,16 +85,50 @@
 
 <ul>
 <li>
-<code>input_shape</code> describes the data processed by the network. Later on we will use a handwritten digit database named MNIST (you can find more about it <a href="http://yann.lecun.com/exdb/mnist/">here</a>). Each digit is a 28x28 1-dimensionnal image (grayscale so only 1 color channel).</li>
+<code>input_shape</code> describes the data processed by the network. Later on we will use a handwritten digit database named MNIST (you can find more about it <a href="http://yann.lecun.com/exdb/mnist/">here</a>). Each digit is a 28x28 1-dimensionnal image (grayscale so only 1 color channel).<br>
+NB: the first parameter indicates the size of the batch, <code>None</code> means it is not fixed at compile time, thus <code>nolearn</code> will figure the value on its own.</li>
 <li>
 <code>conv_num_filters</code> is the amount of filters (or kernels) you will use and <code>conv_filter_size</code> specifies their size, same goes for <code>maxpool_pool_size</code>.</li>
 <li>
-<code>output_num_units</code> means that you subsamble your data down to 10 images.</li>
+<code>output_num_units</code> means that you sub-sample your data down to 10 images.</li>
 <li>
 <code>output_nonlinearity</code> is the activation function used, here it's the maximum (most commonly used for classification problems).</li>
 </ul>
 
-<p>Picking the proper sizes seems a little mystical but we will get to that. A nice site </p>
+<p>Picking the proper sizes seems a little mystical but we will get to that. A nice visualization of the filtering process can be found in a JavaScript implementation <a href="http://cs.stanford.edu/people/karpathy/convnetjs/demo/mnist.html">here</a> (credits to <a href="https://github.com/Karpathy" class="user-mention">@Karpathy</a>).</p>
+
+<p>Now that we have a functional implementation we have to train it !</p>
+
+<h2>
+<a id="loading-a-data-set" class="anchor" href="#loading-a-data-set" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Loading a data-set</h2>
+
+<p>We are going to use the set used in the <a href="https://www.kaggle.com/c/digit-recognizer">Kaggle MNIST competition</a>. </p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> pandas <span class="pl-k">as</span> pd
+<span class="pl-k">import</span> numpy <span class="pl-k">as</span> np
+<span class="pl-k">from</span> urllib <span class="pl-k">import</span> urlretrieve 
+
+filename1, url1 <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>input/test.csv<span class="pl-pds">'</span></span>,  <span class="pl-s"><span class="pl-pds">'</span>https://www.kaggle.com/c/digit-recognizer/download/test.csv<span class="pl-pds">'</span></span>
+filename2, url2 <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>input/train.csv<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>https://www.kaggle.com/c/digit-recognizer/download/train.csv<span class="pl-pds">'</span></span>
+
+<span class="pl-k">if</span> <span class="pl-k">not</span> os.path.exists(filename):
+    <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>Downloading MNIST dataset...<span class="pl-pds">"</span></span>)
+    urlretrieve(url1, filename1)
+    urlretrieve(url2, filename2)
+
+<span class="pl-c"># The competition datafiles are in the directory ../input</span>
+<span class="pl-c"># Read competition data files:</span>
+train <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>../input/train.csv<span class="pl-pds">"</span></span>).values
+test  <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>../input/test.csv<span class="pl-pds">"</span></span>).values
+
+train_labels <span class="pl-k">=</span> train.ix[:,<span class="pl-c1">0</span>].values.astype(np.int32)
+train_images <span class="pl-k">=</span> train.ix[:,<span class="pl-c1">1</span>:].values.astype(np.float32)
+train_images <span class="pl-k">/=</span> train_images.std(<span class="pl-v">axis</span><span class="pl-k">=</span><span class="pl-c1">None</span>)
+train_images <span class="pl-k">-=</span> train_images.mean()</pre></div>
+
+<div class="highlight highlight-source-python"><pre>trainX <span class="pl-k">=</span> train_images.reshape(<span class="pl-k">-</span><span class="pl-c1">1</span>,<span class="pl-c1">1</span>,<span class="pl-c1">28</span>,<span class="pl-c1">28</span>)
+trainY <span class="pl-k">=</span> train_labels
+net0.fit(trainX, trainY)</pre></div>
 
 <h3>
 <a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authors and Contributors</h3>
