@@ -64,21 +64,26 @@
 
 <p>Now that we have the doc opened we can start playing with <code>net0</code> :</p>
 
-<div class="highlight highlight-source-python"><pre>net0 <span class="pl-k">=</span> NeuralNet(
+<div class="highlight highlight-source-python"><pre><span class="pl-c">#from lasagne.updates import sgd</span>
+
+net0 <span class="pl-k">=</span> NeuralNet(
     <span class="pl-v">layers</span> <span class="pl-k">=</span> [(<span class="pl-s"><span class="pl-pds">'</span>input<span class="pl-pds">'</span></span>, layers.InputLayer),
-              (<span class="pl-s"><span class="pl-pds">'</span>conv<span class="pl-pds">'</span></span>, layers.Conv2DLayer),
-              (<span class="pl-s"><span class="pl-pds">'</span>maxpool<span class="pl-pds">'</span></span>, layers.MaxPool2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>conv1<span class="pl-pds">'</span></span>, layers.Conv2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>conv2<span class="pl-pds">'</span></span>, layers.Conv2DLayer),
               (<span class="pl-s"><span class="pl-pds">'</span>output<span class="pl-pds">'</span></span>, layers.DenseLayer)
-              ],
-   <span class="pl-v">input_shape</span> <span class="pl-k">=</span> (<span class="pl-c1">None</span>, <span class="pl-c1">1</span>, <span class="pl-c1">28</span>, <span class="pl-c1">28</span>), 
+    ],
+    <span class="pl-v">input_shape</span> <span class="pl-k">=</span> (<span class="pl-c1">None</span>, <span class="pl-c1">1</span>, <span class="pl-c1">28</span>, <span class="pl-c1">28</span>), 
 
-   <span class="pl-v">conv_num_filters</span> <span class="pl-k">=</span>  <span class="pl-c1">8</span>, <span class="pl-v">conv_filter_size</span> <span class="pl-k">=</span> (<span class="pl-c1">3</span>, <span class="pl-c1">3</span>),
-   <span class="pl-v">maxpool_pool_size</span> <span class="pl-k">=</span> (<span class="pl-c1">2</span>, <span class="pl-c1">2</span>),
+    <span class="pl-v">conv1_num_filters</span> <span class="pl-k">=</span>  <span class="pl-c1">8</span>,  <span class="pl-v">conv1_filter_size</span> <span class="pl-k">=</span> (<span class="pl-c1">3</span>, <span class="pl-c1">3</span>),
+    <span class="pl-v">conv2_num_filters</span> <span class="pl-k">=</span>  <span class="pl-c1">16</span>, <span class="pl-v">conv2_filter_size</span> <span class="pl-k">=</span> (<span class="pl-c1">2</span>, <span class="pl-c1">2</span>),
 
-   <span class="pl-v">output_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>, <span class="pl-v">output_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.softmax,
+    <span class="pl-v">output_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>, <span class="pl-v">output_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.softmax,
 
-   <span class="pl-v">max_epochs</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>,
-   <span class="pl-v">verbose</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>,
+    <span class="pl-v">update</span> <span class="pl-k">=</span> sgd,
+    <span class="pl-v">update_learning_rate</span> <span class="pl-k">=</span> <span class="pl-c1">0.01</span>,
+
+    <span class="pl-v">max_epochs</span> <span class="pl-k">=</span> <span class="pl-c1">20</span>,
+    <span class="pl-v">verbose</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>,
 )</pre></div>
 
 <p>So what do we have here...</p>
@@ -88,7 +93,7 @@
 <code>input_shape</code> describes the data processed by the network. Later on we will use a handwritten digit database named MNIST (you can find more about it <a href="http://yann.lecun.com/exdb/mnist/">here</a>). Each digit is a 28x28 1-dimensionnal image (grayscale so only 1 color channel).<br>
 NB: the first parameter indicates the size of the batch, <code>None</code> means it is not fixed at compile time, thus <code>nolearn</code> will figure the value on its own.</li>
 <li>
-<code>conv_num_filters</code> is the amount of filters (or kernels) you will use and <code>conv_filter_size</code> specifies their size, same goes for <code>maxpool_pool_size</code>.</li>
+<code>conv_num_filters</code> is the amount of filters (or kernels) you will use and <code>conv_filter_size</code> specifies their size.</li>
 <li>
 <code>output_num_units</code> means that you sub-sample your data down to 10 images.</li>
 <li>
@@ -102,33 +107,77 @@ NB: the first parameter indicates the size of the batch, <code>None</code> means
 <h2>
 <a id="loading-a-data-set" class="anchor" href="#loading-a-data-set" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Loading a data-set</h2>
 
-<p>We are going to use the set used in the <a href="https://www.kaggle.com/c/digit-recognizer">Kaggle MNIST competition</a>. </p>
+<p>We are going to use the set provided in the <a href="https://www.kaggle.com/c/digit-recognizer">Kaggle MNIST competition</a>.</p>
 
 <div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> pandas <span class="pl-k">as</span> pd
 <span class="pl-k">import</span> numpy <span class="pl-k">as</span> np
-<span class="pl-k">from</span> urllib <span class="pl-k">import</span> urlretrieve 
-
-filename1, url1 <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>input/test.csv<span class="pl-pds">'</span></span>,  <span class="pl-s"><span class="pl-pds">'</span>https://www.kaggle.com/c/digit-recognizer/download/test.csv<span class="pl-pds">'</span></span>
-filename2, url2 <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">'</span>input/train.csv<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>https://www.kaggle.com/c/digit-recognizer/download/train.csv<span class="pl-pds">'</span></span>
-
-<span class="pl-k">if</span> <span class="pl-k">not</span> os.path.exists(filename):
-    <span class="pl-c1">print</span>(<span class="pl-s"><span class="pl-pds">"</span>Downloading MNIST dataset...<span class="pl-pds">"</span></span>)
-    urlretrieve(url1, filename1)
-    urlretrieve(url2, filename2)
 
 <span class="pl-c"># The competition datafiles are in the directory ../input</span>
 <span class="pl-c"># Read competition data files:</span>
-train <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>../input/train.csv<span class="pl-pds">"</span></span>).values
-test  <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>../input/test.csv<span class="pl-pds">"</span></span>).values
+train <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>input/train.csv<span class="pl-pds">"</span></span>)
+test  <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>input/test.csv<span class="pl-pds">"</span></span>) <span class="pl-c"># Not used during training</span>
 
-train_labels <span class="pl-k">=</span> train.ix[:,<span class="pl-c1">0</span>].values.astype(np.int32)
-train_images <span class="pl-k">=</span> train.ix[:,<span class="pl-c1">1</span>:].values.astype(np.float32)
-train_images <span class="pl-k">/=</span> train_images.std(<span class="pl-v">axis</span><span class="pl-k">=</span><span class="pl-c1">None</span>)
-train_images <span class="pl-k">-=</span> train_images.mean()</pre></div>
+train_images <span class="pl-k">=</span> train.iloc[:,<span class="pl-c1">1</span>:].values
+train_labels <span class="pl-k">=</span> train[[<span class="pl-c1">0</span>]].values.ravel()
 
-<div class="highlight highlight-source-python"><pre>trainX <span class="pl-k">=</span> train_images.reshape(<span class="pl-k">-</span><span class="pl-c1">1</span>,<span class="pl-c1">1</span>,<span class="pl-c1">28</span>,<span class="pl-c1">28</span>)
+<span class="pl-c"># Converting to numpy type (32bits for GPUs)</span>
+train_images <span class="pl-k">=</span> np.array(train_images).astype(np.float32)
+train_labels <span class="pl-k">=</span> train_labels.astype(np.int32)</pre></div>
+
+<p>Once the data-set is loaded we have to add a few lines to start the training: <code>trainX</code> is the data used to learn and <code>trainY</code> the expected result. This method is called «Supervised learning».</p>
+
+<div class="highlight highlight-source-python"><pre>net0 <span class="pl-k">=</span> NeuralNet(
+    <span class="pl-c">#...</span>
+)
+trainX <span class="pl-k">=</span> train_images.reshape(<span class="pl-k">-</span><span class="pl-c1">1</span>, <span class="pl-c1">1</span>, <span class="pl-c1">28</span>, <span class="pl-c1">28</span>)
 trainY <span class="pl-k">=</span> train_labels
 net0.fit(trainX, trainY)</pre></div>
+
+<p><strong>Uncomment the lines in</strong> <code>net0</code> <strong>if you want to test it yourself</strong></p>
+
+<p>This is the results after 20 epochs (the input display origins from <code>verbose=1</code>):</p>
+
+<pre><code># Neural Network with 100618 learnable parameters
+
+## Layer information
+
+  #  name    size
+---  ------  --------
+  0  input   1x28x28
+  1  conv1   8x26x26
+  2  conv2   16x25x25
+  3  output  10
+
+  epoch    train loss    valid loss    train/val    valid acc  dur
+-------  ------------  ------------  -----------  -----------  ------
+      1       5.16510       0.42123     12.26191      0.86043  10.53s
+      2       0.35298       0.30983      1.13928      0.89896  10.58s
+      3       0.27154       0.27564      0.98513      0.91174  10.55s
+      4       0.23111       0.26905      0.85899      0.91618  10.59s
+      5       0.20591       0.26782      0.76883      0.91595  10.71s
+      6       0.18814       0.27432      0.68583      0.91678  10.70s
+      7       0.17368       0.27859      0.62342      0.91891  10.56s
+      8       0.16238       0.28430      0.57115      0.91926  10.69s
+      9       0.15185       0.30812      0.49283      0.91541  10.67s
+     10       0.14281       0.32322      0.44183      0.91465  10.61s
+     11       0.13528       0.33334      0.40583      0.91328  10.59s
+     12       0.12717       0.33398      0.38077      0.91358  10.66s
+     13       0.12007       0.33142      0.36229      0.91678  10.63s
+     14       0.11403       0.33387      0.34153      0.91666  10.61s
+     15       0.10853       0.34899      0.31097      0.91571  10.56s
+     16       0.10315       0.36111      0.28566      0.91334  10.58s
+     17       0.10049       0.35958      0.27947      0.91494  10.56s
+     18       0.09618       0.37745      0.25481      0.91370  10.58s
+     19       0.09219       0.38261      0.24093      0.91322  10.63s
+     20       0.08899       0.41470      0.21458      0.91062  10.68s
+</code></pre>
+
+<p>Human performance would be above 98%, besides a network is considered industry-viable if its accuracy is at least 95%. We're not there yet but <code>net0</code> is really basic.</p>
+
+<h2>
+<a id="choosing-a-learning-method" class="anchor" href="#choosing-a-learning-method" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Choosing a learning method</h2>
+
+<p><img src="img%20src=%22img/net0_lrmethod.png%22%20alt=%22hi%22%20class=%22inline%22/" alt=""></p>
 
 <h3>
 <a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authors and Contributors</h3>
