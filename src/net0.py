@@ -6,8 +6,8 @@ import numpy as np
 
 # The competition datafiles are in the directory ../input
 # Read training and test data files
-train = pd.read_csv("input/train.csv")
-test  = pd.read_csv("input/test.csv")
+train = pd.read_csv("../input/train.csv")
+test  = pd.read_csv("../input/test.csv")
 
 train_images = train.iloc[:,1:].values
 train_labels = train[[0]].values.ravel()
