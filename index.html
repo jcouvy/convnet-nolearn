@@ -79,8 +79,8 @@ net0 <span class="pl-k">=</span> NeuralNet(
 
     <span class="pl-v">output_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>, <span class="pl-v">output_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.softmax,
 
-    <span class="pl-v">update</span> <span class="pl-k">=</span> sgd,
-    <span class="pl-v">update_learning_rate</span> <span class="pl-k">=</span> <span class="pl-c1">0.01</span>,
+    <span class="pl-c">#update = sgd,</span>
+    <span class="pl-c">#update_learning_rate = 0.01,</span>
 
     <span class="pl-v">max_epochs</span> <span class="pl-k">=</span> <span class="pl-c1">20</span>,
     <span class="pl-v">verbose</span> <span class="pl-k">=</span> <span class="pl-c1">1</span>,
@@ -118,30 +118,32 @@ train <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl
 test  <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>input/test.csv<span class="pl-pds">"</span></span>) <span class="pl-c"># Not used during training</span>
 
 train_images <span class="pl-k">=</span> train.iloc[:,<span class="pl-c1">1</span>:].values
-train_labels <span class="pl-k">=</span> train[[<span class="pl-c1">0</span>]].values.ravel()
+train_labels <span class="pl-k">=</span> train[[<span class="pl-c1">0</span>]].values.ravel()</pre></div>
 
-<span class="pl-c"># Converting to numpy type (32bits for GPUs)</span>
-train_images <span class="pl-k">=</span> np.array(train_images).astype(np.float32)
-train_labels <span class="pl-k">=</span> train_labels.astype(np.int32)</pre></div>
-
-<p>Once the data-set is loaded we have to add a few lines to start the training: <code>trainX</code> is the data used to learn and <code>trainY</code> the expected result. This method is called «Supervised learning».</p>
+<p>Once the data-set is loaded we have to add a few lines to start the training: <code>trainX</code> is the data used to learn and <code>trainY</code> the expected result. This method is called « supervised learning ».</p>
 
 <div class="highlight highlight-source-python"><pre>net0 <span class="pl-k">=</span> NeuralNet(
     <span class="pl-c">#...</span>
 )
-trainX <span class="pl-k">=</span> train_images.reshape(<span class="pl-k">-</span><span class="pl-c1">1</span>, <span class="pl-c1">1</span>, <span class="pl-c1">28</span>, <span class="pl-c1">28</span>)
-trainY <span class="pl-k">=</span> train_labels
+<span class="pl-c"># Reshape and normalize training data</span>
+trainX <span class="pl-k">=</span> train_images.reshape(train.shape[<span class="pl-c1">0</span>], <span class="pl-c1">1</span>, <span class="pl-c1">28</span>, <span class="pl-c1">28</span>).astype(np.float32)
+trainX <span class="pl-k">/=</span> <span class="pl-c1">255.0</span>
+
+<span class="pl-c"># Reshape and normalize test data</span>
+testX <span class="pl-k">=</span> test.values.reshape(test.shape[<span class="pl-c1">0</span>], <span class="pl-c1">1</span>, <span class="pl-c1">28</span>, <span class="pl-c1">28</span>).astype(np.float32)
+testX <span class="pl-k">/=</span> <span class="pl-c1">255.0</span>
+
 net0.fit(trainX, trainY)</pre></div>
 
 <p><strong>Uncomment the lines in</strong> <code>net0</code> <strong>if you want to test it yourself</strong></p>
 
 <p>This is the results after 20 epochs (the input display origins from <code>verbose=1</code>):</p>
 
-<pre><code># Neural Network with 100618 learnable parameters
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Neural Network with 100618 learnable parameters</span>
 
-## Layer information
+<span class="pl-c">## Layer information</span>
 
-  #  name    size
+  <span class="pl-c">#  name    size</span>
 ---  ------  --------
   0  input   1x28x28
   1  conv1   8x26x26
@@ -169,15 +171,129 @@ net0.fit(trainX, trainY)</pre></div>
      17       0.10049       0.35958      0.27947      0.91494  10.56s
      18       0.09618       0.37745      0.25481      0.91370  10.58s
      19       0.09219       0.38261      0.24093      0.91322  10.63s
-     20       0.08899       0.41470      0.21458      0.91062  10.68s
-</code></pre>
+     20       0.08899       0.41470      0.21458      0.91062  10.68s</pre></div>
 
 <p>Human performance would be above 98%, besides a network is considered industry-viable if its accuracy is at least 95%. We're not there yet but <code>net0</code> is really basic.</p>
 
 <h2>
 <a id="choosing-a-learning-method" class="anchor" href="#choosing-a-learning-method" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Choosing a learning method</h2>
 
+<p>The following graph is a comparison of the commonly used learning methods:</p>
+
 <p><img src="https://cloud.githubusercontent.com/assets/19994887/16196236/91019214-36fd-11e6-9e9b-1113334e7261.png" alt="learningmethod"></p>
+
+<p>Our network will use <code>nesterov momentum</code>, it has good performance and allows us to tweak the <code>learning rate</code> and <code>momentum</code> as the training occurs (better optimization potential).</p>
+
+<h2>
+<a id="lets-improve-our-network" class="anchor" href="#lets-improve-our-network" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Let's improve our network</h2>
+
+<p>To obtain better results we're going to need more than convolution layers. Most ConvNets are constituted by a successsion of layers as follows (see <a href="http://cs231n.github.io/convolutional-networks/#layerpat">the course CS231n from Stanford University</a>):</p>
+
+<p><code>INPUT -&gt; [[CONV -&gt; RELU]*N -&gt; POOL?]*M -&gt; [FC -&gt; RELU]*K -&gt; FC</code></p>
+
+<ul>
+<li>Input Layer</li>
+<li>Convolution Layer + ReLu</li>
+<li>Pooling Layer</li>
+<li>(...)Repeat</li>
+<li>Fully Connected Layer (aka Hidden Layers)</li>
+<li>Output Layer</li>
+</ul>
+
+<p>Considering all this we will add a few layers to <code>net0</code>:</p>
+
+<div class="highlight highlight-source-python"><pre>net1 <span class="pl-k">=</span> NeuralNet(
+    <span class="pl-v">layers</span> <span class="pl-k">=</span> [(<span class="pl-s"><span class="pl-pds">'</span>input<span class="pl-pds">'</span></span>, layers.InputLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>conv1<span class="pl-pds">'</span></span>, layers.Conv2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>pool1<span class="pl-pds">'</span></span>, layers.MaxPool2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>conv2<span class="pl-pds">'</span></span>, layers.Conv2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>pool2<span class="pl-pds">'</span></span>, layers.MaxPool2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>hidden1<span class="pl-pds">'</span></span>, layers.DenseLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>hidden2<span class="pl-pds">'</span></span>, layers.DenseLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>output<span class="pl-pds">'</span></span>, layers.DenseLayer)
+              ],
+              <span class="pl-c"># (...)</span>
+)</pre></div>
+
+<h2>
+<a id="how-to-tune-the-number-of-kernels-filters-" class="anchor" href="#how-to-tune-the-number-of-kernels-filters-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to tune the number of kernels (filters) ?</h2>
+
+<p>This is a tricky part, from what I have read and learned it is mostly done empirically. A team of Google researchers tried to explain the importance of proper initialization and gave some guidelines, you can read their work here <a href="http://arxiv.org/abs/1512.00567">Rethinking the Inception Architecture for Computer Vision</a> (not beginner friendly).</p>
+
+<p>For the moment a simple way of proceeding is to enable <code>verbose=2</code>. This will give us more information about our network's learning capacity of the coverage of its data. Later on we will try to experiment a way of finding better values (see part 2).</p>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Neural Network with 69818 learnable parameters</span>
+
+<span class="pl-c">## Layer information</span>
+
+name     size        total    cap.Y    cap.X    cov.Y    cov.X
+-------  --------  -------  -------  -------  -------  -------
+input    1x24x24       576   100.00   100.00   100.00   100.00
+conv1    16x22x22     7744   100.00   100.00    12.50    12.50
+conv2    16x21x21     7056    50.00    50.00    16.67    16.67
+pool1    16x10x10     1600    50.00    50.00    16.67    16.67
+conv3    32x9x9       2592    66.67    66.67    25.00    25.00
+conv4    32x8x8       2048    50.00    50.00    33.33    33.33
+pool2    32x4x4        512    50.00    50.00    33.33    33.33
+hidden1  100           100   100.00   100.00   100.00   100.00
+hidden2  100           100   100.00   100.00   100.00   100.00
+output   10             10   100.00   100.00   100.00   100.00
+
+Explanation
+    X, Y:    image dimensions
+    cap.:    learning capacity
+    cov.:    coverage of image
+    magenta: capacity too low (<span class="pl-k">&lt;</span>1/6)
+    cyan:    image coverage too high (<span class="pl-k">&gt;</span>100%)
+    red:     capacity too low and coverage too high
+</pre></div>
+
+<h2>
+<a id="the-overfitting-problem" class="anchor" href="#the-overfitting-problem" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The overfitting problem</h2>
+
+<div class="highlight highlight-source-python"><pre>net2 <span class="pl-k">=</span> NeuralNet(
+    <span class="pl-v">layers</span> <span class="pl-k">=</span> [(<span class="pl-s"><span class="pl-pds">'</span>input<span class="pl-pds">'</span></span>, layers.InputLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>conv1<span class="pl-pds">'</span></span>, layers.Conv2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>pool1<span class="pl-pds">'</span></span>, layers.MaxPool2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>conv2<span class="pl-pds">'</span></span>, layers.Conv2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>pool2<span class="pl-pds">'</span></span>, layers.MaxPool2DLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>hidden1<span class="pl-pds">'</span></span>, layers.DenseLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>hidden2<span class="pl-pds">'</span></span>, layers.DenseLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>output<span class="pl-pds">'</span></span>, layers.DenseLayer)
+              ],
+    <span class="pl-c"># Each digit is a 28x28 1-Dimensionnal image,</span>
+    <span class="pl-c"># We crop each image by 2 pixels in width and height.</span>
+    <span class="pl-v">input_shape</span> <span class="pl-k">=</span> (<span class="pl-c1">None</span>, <span class="pl-c1">1</span>, <span class="pl-c1">26</span>, <span class="pl-c1">26</span>),
+
+    <span class="pl-v">conv1_num_filters</span> <span class="pl-k">=</span>  <span class="pl-c1">13</span>, <span class="pl-v">conv1_filter_size</span> <span class="pl-k">=</span> (<span class="pl-c1">3</span>, <span class="pl-c1">3</span>),
+    <span class="pl-v">conv1_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.rectify,
+    <span class="pl-v">pool1_pool_size</span> <span class="pl-k">=</span> (<span class="pl-c1">2</span>, <span class="pl-c1">2</span>),
+
+    <span class="pl-v">conv2_num_filters</span> <span class="pl-k">=</span> <span class="pl-c1">26</span>, <span class="pl-v">conv2_filter_size</span> <span class="pl-k">=</span> (<span class="pl-c1">2</span>, <span class="pl-c1">2</span>),
+    <span class="pl-v">conv2_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.rectify,
+    <span class="pl-v">pool2_pool_size</span> <span class="pl-k">=</span> (<span class="pl-c1">2</span>, <span class="pl-c1">2</span>),
+
+    <span class="pl-v">hidden1_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">128</span>, <span class="pl-v">hidden2_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">128</span>,
+    <span class="pl-v">output_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>,  <span class="pl-v">output_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.softmax,
+
+    <span class="pl-c"># Learning method.</span>
+    <span class="pl-v">update</span> <span class="pl-k">=</span> nesterov_momentum,
+    <span class="pl-v">update_learning_rate</span> <span class="pl-k">=</span> <span class="pl-c1">0.01</span>,
+    <span class="pl-v">update_momentum</span> <span class="pl-k">=</span> <span class="pl-c1">0.9</span>,    
+
+    <span class="pl-c"># Calls the class CropBatchIterator as the training occurs</span>
+    <span class="pl-c"># Doesn't affect GPU performance as the CPU deals with the</span>
+    <span class="pl-c"># cropping operation.</span>
+    <span class="pl-v">batch_iterator_train</span> <span class="pl-k">=</span> CropBatchIterator(<span class="pl-v">batch_size</span><span class="pl-k">=</span><span class="pl-c1">200</span>),
+    <span class="pl-v">batch_iterator_test</span> <span class="pl-k">=</span> CropBatchIterator(<span class="pl-v">batch_size</span><span class="pl-k">=</span><span class="pl-c1">200</span>),
+
+    <span class="pl-v">regression</span> <span class="pl-k">=</span> <span class="pl-c1">False</span>,
+    <span class="pl-v">max_epochs</span> <span class="pl-k">=</span> <span class="pl-c1">100</span>,
+
+    <span class="pl-c"># Deeper layer information (learning capacity, coverage...)</span>
+    <span class="pl-v">verbose</span> <span class="pl-k">=</span> <span class="pl-c1">2</span>, 
+
+)</pre></div>
 
 <h3>
 <a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authors and Contributors</h3>
