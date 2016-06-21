@@ -38,7 +38,7 @@ net0 = NeuralNet(
               ],
     
     # Each digit is a 28x28 1-Dimensionnal image,
-    input_shape = (None, 1, 26, 26),
+    input_shape = (None, 1, 28, 28),
 
     conv1_num_filters =  8, conv1_filter_size = (3, 3),
     conv1_nonlinearity = lasagne.nonlinearities.rectify,
