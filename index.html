@@ -113,9 +113,9 @@ NB: the first parameter indicates the size of the batch, <code>None</code> means
 <span class="pl-k">import</span> numpy <span class="pl-k">as</span> np
 
 <span class="pl-c"># The competition datafiles are in the directory ../input</span>
-<span class="pl-c"># Read competition data files:</span>
+<span class="pl-c"># Read training and test data files</span>
 train <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>input/train.csv<span class="pl-pds">"</span></span>)
-test  <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>input/test.csv<span class="pl-pds">"</span></span>) <span class="pl-c"># Not used during training</span>
+test  <span class="pl-k">=</span> pd.read_csv(<span class="pl-s"><span class="pl-pds">"</span>input/test.csv<span class="pl-pds">"</span></span>)
 
 train_images <span class="pl-k">=</span> train.iloc[:,<span class="pl-c1">1</span>:].values
 train_labels <span class="pl-k">=</span> train[[<span class="pl-c1">0</span>]].values.ravel()</pre></div>
@@ -185,7 +185,7 @@ net0.fit(trainX, trainY)</pre></div>
 <p>Our network will use <code>nesterov momentum</code>, it has good performance and allows us to tweak the <code>learning rate</code> and <code>momentum</code> as the training occurs (better optimization potential).</p>
 
 <h2>
-<a id="lets-improve-our-network" class="anchor" href="#lets-improve-our-network" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Let's improve our network</h2>
+<a id="building-a-proper-architecture" class="anchor" href="#building-a-proper-architecture" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Building a proper architecture</h2>
 
 <p>To obtain better results we're going to need more than convolution layers. Most ConvNets are constituted by a successsion of layers as follows (see <a href="http://cs231n.github.io/convolutional-networks/#layerpat">the course CS231n from Stanford University</a>):</p>
 
@@ -214,6 +214,67 @@ net0.fit(trainX, trainY)</pre></div>
               ],
               <span class="pl-c"># (...)</span>
 )</pre></div>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Neural Network with 38186 learnable parameters</span>
+
+  epoch    train loss    valid loss    train/val    valid acc  dur
+-------  ------------  ------------  -----------  -----------  -----
+      1       1.02026       0.25914      3.93707      0.91891  7.89s
+     ..       .......       .......      .......      .......  .....
+     10       0.05761       0.08531      0.67536      0.97561  7.88s
+     ..       .......       .......      .......      .......  .....
+     20       0.02686       0.10420      0.25778      0.97182  7.91s
+     ..       .......       .......      .......      .......  .....
+     30       0.01065       0.11439      0.09308      0.97691  8.01s
+     ..       .......       .......      .......      .......  .....
+     40       0.00297       0.14241      0.02082      0.97573  8.04s
+     ..       .......       .......      .......      .......  .....
+     50       0.00100       0.16171      0.00615      0.97615  7.99s</pre></div>
+
+<p>We notice a few things:</p>
+
+<ul>
+<li>Lowered amount of learnable parameters (due to the pooling layers).</li>
+<li>The network is a lot faster (consequence of the above). The 2 seconds difference might not feel important to you but a deeper network can be trained for over 3000 epochs. </li>
+<li>Much better accuracy &gt;97%.</li>
+</ul>
+
+<p>Let's trace a graph using <code>pyplot</code> to compare our results. </p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> cPickle <span class="pl-k">as</span> pickle
+<span class="pl-c"># (...)</span>
+<span class="pl-c"># Saving the net with cPickle to load it back later.</span>
+<span class="pl-k">with</span> <span class="pl-c1">open</span>(<span class="pl-s"><span class="pl-pds">'</span>net0.pickle<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>wb<span class="pl-pds">'</span></span>) <span class="pl-k">as</span> f:
+   pickle.dump(net0, f, <span class="pl-k">-</span><span class="pl-c1">1</span>)</pre></div>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> matplotlib.pyplot <span class="pl-k">as</span> plt
+<span class="pl-k">try</span>:
+    <span class="pl-k">with</span> <span class="pl-c1">open</span>(<span class="pl-s"><span class="pl-pds">'</span>net1.pickle<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>rb<span class="pl-pds">'</span></span>) <span class="pl-k">as</span> f1, <span class="pl-c1">open</span>(<span class="pl-s"><span class="pl-pds">'</span>net2.pickle<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>rb<span class="pl-pds">'</span></span>) <span class="pl-k">as</span> f2:
+        net1 <span class="pl-k">=</span> cPickle.load(f1)
+        net2 <span class="pl-k">=</span> cPickle.load(f2)
+
+        train_loss_net1 <span class="pl-k">=</span> np.array([i[<span class="pl-s"><span class="pl-pds">"</span>train_loss<span class="pl-pds">"</span></span>]  <span class="pl-k">for</span> i <span class="pl-k">in</span> net1.train_history_])
+        valid_loss_net1 <span class="pl-k">=</span> np.array([i[<span class="pl-s"><span class="pl-pds">"</span>valid_loss<span class="pl-pds">"</span></span>]  <span class="pl-k">for</span> i <span class="pl-k">in</span> net1.train_history_])  
+
+        train_loss_net2 <span class="pl-k">=</span> np.array([i[<span class="pl-s"><span class="pl-pds">"</span>train_loss<span class="pl-pds">"</span></span>]  <span class="pl-k">for</span> i <span class="pl-k">in</span> net2.train_history_])
+        valid_loss_net2 <span class="pl-k">=</span> np.array([i[<span class="pl-s"><span class="pl-pds">"</span>valid_loss<span class="pl-pds">"</span></span>]  <span class="pl-k">for</span> i <span class="pl-k">in</span> net2.train_history_])
+
+        plt.plot(train_loss_net1, <span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-v">linewidth</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">label</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>Net1 valid/loss<span class="pl-pds">"</span></span>)
+        plt.plot(train_loss_net2, <span class="pl-s"><span class="pl-pds">'</span>b--<span class="pl-pds">'</span></span>, <span class="pl-v">linewidth</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">label</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>Net2 valid/loss<span class="pl-pds">"</span></span>)
+        plt.plot(valid_loss_net1, <span class="pl-s"><span class="pl-pds">'</span>r<span class="pl-pds">'</span></span>, <span class="pl-v">linewidth</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">label</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>Net1 train/loss<span class="pl-pds">"</span></span>)
+        plt.plot(valid_loss_net2, <span class="pl-s"><span class="pl-pds">'</span>r--<span class="pl-pds">'</span></span>, <span class="pl-v">linewidth</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">label</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>Net2 train/loss<span class="pl-pds">"</span></span>)
+
+        plt.grid()
+        plt.legend()  
+        plt.xlabel(<span class="pl-s"><span class="pl-pds">"</span>Epoch<span class="pl-pds">"</span></span>)
+        plt.ylabel(<span class="pl-s"><span class="pl-pds">"</span>Loss<span class="pl-pds">"</span></span>)
+        plt.ylim(<span class="pl-c1">1e-2</span>, <span class="pl-c1">1e-1</span>)
+        plt.yscale(<span class="pl-s"><span class="pl-pds">"</span>log<span class="pl-pds">"</span></span>)
+        plt.show()
+
+<span class="pl-k">except</span> <span class="pl-c1">IOError</span> <span class="pl-k">as</span> e:
+    <span class="pl-c1">print</span> <span class="pl-s"><span class="pl-pds">'</span>Operation failed: <span class="pl-c1">%s</span><span class="pl-pds">'</span></span> <span class="pl-k">%</span> e.strerror
+</pre></div>
 
 <h2>
 <a id="how-to-tune-the-number-of-kernels-filters-" class="anchor" href="#how-to-tune-the-number-of-kernels-filters-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to tune the number of kernels (filters) ?</h2>
