@@ -27,7 +27,7 @@ trainY = train_labels.astype(np.int32)
 import theano
 import lasagne
 from lasagne import layers
-from lasagne.updates import sgd
+from lasagne.updates import nesterov_momentum
 from nolearn.lasagne import NeuralNet, PrintLayerInfo #used for verbose=2
 
 net1 = NeuralNet(
@@ -67,6 +67,6 @@ net1 = NeuralNet(
 net1.fit(trainX, trainY)
 
 # Saving the net with cPickle to load it back later.
-# with open('net1.pickle', 'wb') as f:
-#    pickle.dump(net1, f, -1)
+with open('net1.pickle', 'wb') as f:
+    pickle.dump(net1, f, -1)
 
