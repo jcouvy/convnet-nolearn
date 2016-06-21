@@ -29,6 +29,8 @@
 <h2>
 <a id="introduction" class="anchor" href="#introduction" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Introduction</h2>
 
+<hr>
+
 <p>We’ve crafted some handsome templates for you to use. Go ahead and click 'Continue to layouts' to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved.</p>
 
 <h3>
@@ -36,6 +38,8 @@
 
 <h2>
 <a id="lets-make-a-first-model" class="anchor" href="#lets-make-a-first-model" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Let's make a first model</h2>
+
+<hr>
 
 <p>We will start to fiddle with the different layers available. This is where <code>nolearn</code> really shines as it allows a clear and easy way to implement your net. First we need to import a few modules:</p>
 
@@ -106,6 +110,8 @@ NB: the first parameter indicates the size of the batch, <code>None</code> means
 
 <h2>
 <a id="loading-a-data-set" class="anchor" href="#loading-a-data-set" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Loading a data-set</h2>
+
+<hr>
 
 <p>We are going to use the set provided in the <a href="https://www.kaggle.com/c/digit-recognizer">Kaggle MNIST competition</a>.</p>
 
@@ -178,6 +184,8 @@ net0.fit(trainX, trainY)</pre></div>
 <h2>
 <a id="choosing-a-learning-method" class="anchor" href="#choosing-a-learning-method" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Choosing a learning method</h2>
 
+<hr>
+
 <p>The following graph is a comparison of the commonly used learning methods:</p>
 
 <p><img src="https://cloud.githubusercontent.com/assets/19994887/16196236/91019214-36fd-11e6-9e9b-1113334e7261.png" alt="learningmethod"></p>
@@ -186,6 +194,8 @@ net0.fit(trainX, trainY)</pre></div>
 
 <h2>
 <a id="building-a-proper-architecture" class="anchor" href="#building-a-proper-architecture" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Building a proper architecture</h2>
+
+<hr>
 
 <p>To obtain better results we're going to need more than convolution layers. Most ConvNets are constituted by a successsion of layers as follows (see <a href="http://cs231n.github.io/convolutional-networks/#layerpat">the course CS231n from Stanford University</a>):</p>
 
@@ -247,6 +257,8 @@ net0.fit(trainX, trainY)</pre></div>
 <h2>
 <a id="how-to-tune-the-number-of-kernels-filters-" class="anchor" href="#how-to-tune-the-number-of-kernels-filters-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to tune the number of kernels (filters) ?</h2>
 
+<hr>
+
 <p>Now this is a tricky part... From what I have read and learned it is mostly done empirically. One could say it is "half intuition, half black magic". A team of Google researchers tried to explain the importance of proper initialization and gave some guidelines, see <a href="http://arxiv.org/abs/1512.00567">Rethinking the Inception Architecture for Computer Vision</a>.</p>
 
 <p>For the moment a simple way of proceeding is, firstly, to enable <code>verbose=2</code> (it will give us more information about our network's learning capacity of the coverage of its data) then fix a small amount of iteration <code>max_epochs=10</code> and test the best combination of kernel sizes (best ratio accuracy/duration for example). We will try to experiment a better way of finding optimal values later on (see part 2).</p>
@@ -295,6 +307,8 @@ output  10            10   100.00   100.00   100.00   100.00</pre></div>
 
 <h2>
 <a id="the-overfitting-problem" class="anchor" href="#the-overfitting-problem" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The overfitting problem</h2>
+
+<hr>
 
 <div class="highlight highlight-source-python"><pre>net2 <span class="pl-k">=</span> NeuralNet(
     <span class="pl-v">layers</span> <span class="pl-k">=</span> [(<span class="pl-s"><span class="pl-pds">'</span>input<span class="pl-pds">'</span></span>, layers.InputLayer),
