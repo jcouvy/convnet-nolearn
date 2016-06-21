@@ -242,16 +242,16 @@ net0.fit(trainX, trainY)</pre></div>
 
 <p><img src="https://cloud.githubusercontent.com/assets/19994887/16229020/c9d4c666-37ba-11e6-8498-f8c7176c1dec.png" alt="Net0 vs Net1"></p>
 
-<p>Both <code>net1</code> curves drop significantly lower, its a good sign we're improving !</p>
+<p>Both <code>net1</code> curves drop significantly lower, its a sign we're improving !</p>
 
 <h2>
 <a id="how-to-tune-the-number-of-kernels-filters-" class="anchor" href="#how-to-tune-the-number-of-kernels-filters-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to tune the number of kernels (filters) ?</h2>
 
 <p>Now this is a tricky part... From what I have read and learned it is mostly done empirically. One could say it is "half intuition, half black magic". A team of Google researchers tried to explain the importance of proper initialization and gave some guidelines, see <a href="http://arxiv.org/abs/1512.00567">Rethinking the Inception Architecture for Computer Vision</a>.</p>
 
-<p>For the moment a simple way of proceeding is, firstly, to enable <code>verbose=2</code> (it will give us more information about our network's learning capacity of the coverage of its data) then you fix a small amount of iteration <code>max_epochs = 10</code> and test the best combination of kernel size (best ratio accuracy/duration for example). We will try to experiment a better way of optimal values later on (see part 2).</p>
+<p>For the moment a simple way of proceeding is, firstly, to enable <code>verbose=2</code> (it will give us more information about our network's learning capacity of the coverage of its data) then fix a small amount of iteration <code>max_epochs=10</code> and test the best combination of kernel sizes (best ratio accuracy/duration for example). We will try to experiment a better way of finding optimal values later on (see part 2).</p>
 
-<p>Take a look at the input of <code>verbose = 2</code> for <code>net1</code> :</p>
+<p>Lets take a look at the input of <code>verbose=2</code> :</p>
 
 <div class="highlight highlight-source-shell"><pre><span class="pl-c"># Neural Network with 38186 learnable parameters</span>
 
@@ -275,6 +275,23 @@ Explanation
     cyan:    image coverage too high (<span class="pl-k">&gt;</span>100%)
     red:     capacity too low and coverage too high
 </pre></div>
+
+<p>Sadly we cannot see the color scheme here, there is no problem on a terminal though. The output will guide you through a simple optimization of your values. Imagine a network composed of multiple pooling layers, the output would be as follows:</p>
+
+<div class="highlight highlight-source-shell"><pre>name    size       total    cap.Y    cap.X    cov.Y    cov.X
+------  -------  -------  -------  -------  -------  -------
+input   1x28x28      784   100.00   100.00   100.00   100.00
+conv1   8x28x28     6272   100.00   100.00    10.71    10.71
+pool1   8x14x14     1568   100.00   100.00    10.71    10.71
+conv2   8x14x14     1568    85.71    85.71    25.00    25.00
+pool2   8x7x7        392    85.71    85.71    25.00    25.00
+conv3   16x7x7       784    80.00    80.00    53.57    53.57
+pool3   16x3x3       144    80.00    80.00    53.57    53.57
+conv4   16x3x3       144    77.42    77.42   110.71   110.71
+pool4   16x1x1        16    77.42    77.42   110.71   110.71
+output  10            10   100.00   100.00   100.00   100.00</pre></div>
+
+<p>The batch is goes through too many sub-samples, the resulting image is really small. On the 4th convolution the network would cover more than 100% of the image surface (should appear in cyan), this is a pretty bad optimization.</p>
 
 <h2>
 <a id="the-overfitting-problem" class="anchor" href="#the-overfitting-problem" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The overfitting problem</h2>
