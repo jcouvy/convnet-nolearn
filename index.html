@@ -208,8 +208,7 @@ net0.fit(trainX, trainY)</pre></div>
               (<span class="pl-s"><span class="pl-pds">'</span>pool1<span class="pl-pds">'</span></span>, layers.MaxPool2DLayer),
               (<span class="pl-s"><span class="pl-pds">'</span>conv2<span class="pl-pds">'</span></span>, layers.Conv2DLayer),
               (<span class="pl-s"><span class="pl-pds">'</span>pool2<span class="pl-pds">'</span></span>, layers.MaxPool2DLayer),
-              (<span class="pl-s"><span class="pl-pds">'</span>hidden1<span class="pl-pds">'</span></span>, layers.DenseLayer),
-              (<span class="pl-s"><span class="pl-pds">'</span>hidden2<span class="pl-pds">'</span></span>, layers.DenseLayer),
+              (<span class="pl-s"><span class="pl-pds">'</span>hidden<span class="pl-pds">'</span></span>, layers.DenseLayer),
               (<span class="pl-s"><span class="pl-pds">'</span>output<span class="pl-pds">'</span></span>, layers.DenseLayer)
               ],
               <span class="pl-c"># (...)</span>
@@ -239,66 +238,34 @@ net0.fit(trainX, trainY)</pre></div>
 <li>Much better accuracy &gt;97%.</li>
 </ul>
 
-<p>Let's trace a graph using <code>pyplot</code> to compare our results. </p>
+<p>Let's trace a graph using <code>pyplot</code> to compare our results:</p>
 
-<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> cPickle <span class="pl-k">as</span> pickle
-<span class="pl-c"># (...)</span>
-<span class="pl-c"># Saving the net with cPickle to load it back later.</span>
-<span class="pl-k">with</span> <span class="pl-c1">open</span>(<span class="pl-s"><span class="pl-pds">'</span>net0.pickle<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>wb<span class="pl-pds">'</span></span>) <span class="pl-k">as</span> f:
-   pickle.dump(net0, f, <span class="pl-k">-</span><span class="pl-c1">1</span>)</pre></div>
+<p><img src="https://cloud.githubusercontent.com/assets/19994887/16229020/c9d4c666-37ba-11e6-8498-f8c7176c1dec.png" alt="Net0 vs Net1"></p>
 
-<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> matplotlib.pyplot <span class="pl-k">as</span> plt
-<span class="pl-k">try</span>:
-    <span class="pl-k">with</span> <span class="pl-c1">open</span>(<span class="pl-s"><span class="pl-pds">'</span>net1.pickle<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>rb<span class="pl-pds">'</span></span>) <span class="pl-k">as</span> f1, <span class="pl-c1">open</span>(<span class="pl-s"><span class="pl-pds">'</span>net2.pickle<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>rb<span class="pl-pds">'</span></span>) <span class="pl-k">as</span> f2:
-        net1 <span class="pl-k">=</span> cPickle.load(f1)
-        net2 <span class="pl-k">=</span> cPickle.load(f2)
-
-        train_loss_net1 <span class="pl-k">=</span> np.array([i[<span class="pl-s"><span class="pl-pds">"</span>train_loss<span class="pl-pds">"</span></span>]  <span class="pl-k">for</span> i <span class="pl-k">in</span> net1.train_history_])
-        valid_loss_net1 <span class="pl-k">=</span> np.array([i[<span class="pl-s"><span class="pl-pds">"</span>valid_loss<span class="pl-pds">"</span></span>]  <span class="pl-k">for</span> i <span class="pl-k">in</span> net1.train_history_])  
-
-        train_loss_net2 <span class="pl-k">=</span> np.array([i[<span class="pl-s"><span class="pl-pds">"</span>train_loss<span class="pl-pds">"</span></span>]  <span class="pl-k">for</span> i <span class="pl-k">in</span> net2.train_history_])
-        valid_loss_net2 <span class="pl-k">=</span> np.array([i[<span class="pl-s"><span class="pl-pds">"</span>valid_loss<span class="pl-pds">"</span></span>]  <span class="pl-k">for</span> i <span class="pl-k">in</span> net2.train_history_])
-
-        plt.plot(train_loss_net1, <span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-v">linewidth</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">label</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>Net1 valid/loss<span class="pl-pds">"</span></span>)
-        plt.plot(train_loss_net2, <span class="pl-s"><span class="pl-pds">'</span>b--<span class="pl-pds">'</span></span>, <span class="pl-v">linewidth</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">label</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>Net2 valid/loss<span class="pl-pds">"</span></span>)
-        plt.plot(valid_loss_net1, <span class="pl-s"><span class="pl-pds">'</span>r<span class="pl-pds">'</span></span>, <span class="pl-v">linewidth</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">label</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>Net1 train/loss<span class="pl-pds">"</span></span>)
-        plt.plot(valid_loss_net2, <span class="pl-s"><span class="pl-pds">'</span>r--<span class="pl-pds">'</span></span>, <span class="pl-v">linewidth</span><span class="pl-k">=</span><span class="pl-c1">2</span>, <span class="pl-v">label</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">"</span>Net2 train/loss<span class="pl-pds">"</span></span>)
-
-        plt.grid()
-        plt.legend()  
-        plt.xlabel(<span class="pl-s"><span class="pl-pds">"</span>Epoch<span class="pl-pds">"</span></span>)
-        plt.ylabel(<span class="pl-s"><span class="pl-pds">"</span>Loss<span class="pl-pds">"</span></span>)
-        plt.ylim(<span class="pl-c1">1e-2</span>, <span class="pl-c1">1e-1</span>)
-        plt.yscale(<span class="pl-s"><span class="pl-pds">"</span>log<span class="pl-pds">"</span></span>)
-        plt.show()
-
-<span class="pl-k">except</span> <span class="pl-c1">IOError</span> <span class="pl-k">as</span> e:
-    <span class="pl-c1">print</span> <span class="pl-s"><span class="pl-pds">'</span>Operation failed: <span class="pl-c1">%s</span><span class="pl-pds">'</span></span> <span class="pl-k">%</span> e.strerror
-</pre></div>
+<p>Both <code>net1</code> curves drop significantly lower, its a good sign we're improving !</p>
 
 <h2>
 <a id="how-to-tune-the-number-of-kernels-filters-" class="anchor" href="#how-to-tune-the-number-of-kernels-filters-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to tune the number of kernels (filters) ?</h2>
 
-<p>This is a tricky part, from what I have read and learned it is mostly done empirically. A team of Google researchers tried to explain the importance of proper initialization and gave some guidelines, you can read their work here <a href="http://arxiv.org/abs/1512.00567">Rethinking the Inception Architecture for Computer Vision</a> (not beginner friendly).</p>
+<p>Now this is a tricky part... From what I have read and learned it is mostly done empirically. One could say it is "half intuition, half black magic". A team of Google researchers tried to explain the importance of proper initialization and gave some guidelines, see <a href="http://arxiv.org/abs/1512.00567">Rethinking the Inception Architecture for Computer Vision</a>.</p>
 
-<p>For the moment a simple way of proceeding is to enable <code>verbose=2</code>. This will give us more information about our network's learning capacity of the coverage of its data. Later on we will try to experiment a way of finding better values (see part 2).</p>
+<p>For the moment a simple way of proceeding is, firstly, to enable <code>verbose=2</code> (it will give us more information about our network's learning capacity of the coverage of its data) then you fix a small amount of iteration <code>max_epochs = 10</code> and test the best combination of kernel size (best ratio accuracy/duration for example). We will try to experiment a better way of optimal values later on (see part 2).</p>
 
-<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Neural Network with 69818 learnable parameters</span>
+<p>Take a look at the input of <code>verbose = 2</code> for <code>net1</code> :</p>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Neural Network with 38186 learnable parameters</span>
 
 <span class="pl-c">## Layer information</span>
 
-name     size        total    cap.Y    cap.X    cov.Y    cov.X
--------  --------  -------  -------  -------  -------  -------
-input    1x24x24       576   100.00   100.00   100.00   100.00
-conv1    16x22x22     7744   100.00   100.00    12.50    12.50
-conv2    16x21x21     7056    50.00    50.00    16.67    16.67
-pool1    16x10x10     1600    50.00    50.00    16.67    16.67
-conv3    32x9x9       2592    66.67    66.67    25.00    25.00
-conv4    32x8x8       2048    50.00    50.00    33.33    33.33
-pool2    32x4x4        512    50.00    50.00    33.33    33.33
-hidden1  100           100   100.00   100.00   100.00   100.00
-hidden2  100           100   100.00   100.00   100.00   100.00
-output   10             10   100.00   100.00   100.00   100.00
+name    size        total    cap.Y    cap.X    cov.Y    cov.X
+------  --------  -------  -------  -------  -------  -------
+input   1x28x28       784   100.00   100.00   100.00   100.00
+conv1   8x26x26      5408   100.00   100.00    10.71    10.71
+pool1   8x13x13      1352   100.00   100.00    10.71    10.71
+conv2   16x12x12     2304    80.00    80.00    17.86    17.86
+pool2   16x6x6        576    80.00    80.00    17.86    17.86
+hidden  64             64   100.00   100.00   100.00   100.00
+output  10             10   100.00   100.00   100.00   100.00
 
 Explanation
     X, Y:    image dimensions
