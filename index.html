@@ -55,10 +55,10 @@
 <ul>
 <li>
 <a href="http://www.python.org/">Python</a> 2 &gt;=2.6 or <a href="http://www.python.org/">Python</a> 3 &gt;=3.3 (we are using Python2.7)</li>
-<li>Set up a <a href="https://virtualenv.pypa.io/en/stable/">virtualenv</a> (optional but recommended to keep things stable as nolearn is frequently updated)</li>
+<li>Set up a <a href="https://virtualenv.pypa.io/en/stable/">virtualenv</a> (optional but recommended to keep things stable as nolearn is young and frequently updated)</li>
 <li>The <a href="https://github.com/dnouri/nolearn">nolearn framework</a>
 </li>
-<li>A text editor of your choice: <a href="https://www.gnu.org/software/emacs/">GNU Emacs</a> for example (I don't want to start a war here ¯\<em>(ツ)</em>/¯)</li>
+<li>A text editor of your choice: <a href="https://www.gnu.org/software/emacs/">GNU Emacs</a> for example (I don't want to start a war here (◕‿◕✿))</li>
 <li>Access to a GPU with <a href="https://developer.nvidia.com/cuda-zone">CUDA</a> (you can try simple nets with your CPU only)</li>
 </ul>
 
@@ -329,12 +329,51 @@ conv4   16x3x3       144    77.42    77.42   110.71   110.71
 pool4   16x1x1        16    77.42    77.42   110.71   110.71
 output  10            10   100.00   100.00   100.00   100.00</pre></div>
 
-<p>The batch is goes through too many sub-samples, the resulting image is really small. On the 4th convolution the network would cover more than 100% of the image surface (should appear in cyan), this is a pretty bad optimization.</p>
+<p>Each pooling layer is sub-sampling the input, the resulting image is really small. On the 4th convolution the network would cover more than 100% of the image surface (should appear in cyan), this is a pretty bad optimization.</p>
 
 <h2>
 <a id="the-overfitting-problem" class="anchor" href="#the-overfitting-problem" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The overfitting problem</h2>
 
 <hr>
+
+<p>To understand the issue we need to scroll back to the <code>net1</code> graph. Even though the results are better we can clearly see the <code>train/loss</code> value (depicted in red) increase while the <code>valid/loss</code> steadily decreases. This is often a situation where overfitting have occured. But what is « overfitting » ?</p>
+
+<blockquote>
+<p>In statistics and machine learning, one of the most common tasks is to fit a "model" to a set of training data, so as to be able to make reliable predictions on general untrained data. In overfitting, a statistical model describes <strong>random error</strong> or <strong>noise</strong> instead of the underlying relationship. Overfitting occurs when a model is excessively complex, such as having too many parameters relative to the number of observations. A model that has been overfit has <strong>poor predictive performance</strong>, as it overreacts to minor fluctuations in the training data.<br>
+<em>(source: <a href="https://en.wikipedia.org/wiki/Overfitting">https://en.wikipedia.org/wiki/Overfitting</a>)</em></p>
+</blockquote>
+
+<p>The definition might not be clear to everyone, focus on the highlighted parts. We can easily assume two things: </p>
+
+<ul>
+<li>Overfitting is a common issue in ML.</li>
+<li>We want to get rid of it as best as we can.</li>
+</ul>
+
+<p>There are different ways to deal with overfitting, in <code>net2</code> we will try to use the <code>BatchIterator</code> provided by <code>nolearn</code> to simulate a larger amount of data. This technique is called <strong>Data augmentation</strong>.</p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">from</span> nolearn.lasagne <span class="pl-k">import</span> BatchIterator, <span class="pl-c">#...</span>
+
+<span class="pl-c"># Custom Batch Iterator called by NeuralNet to provided augmented</span>
+<span class="pl-c"># data in order to reduce overfitting.</span>
+<span class="pl-c"># Randomly crops by 2 pixels the inputed image.</span>
+<span class="pl-c"># Returns the new tensor Xb (trainX) and the labels.</span>
+<span class="pl-k">class</span> <span class="pl-en">CropBatchIterator</span>(<span class="pl-e">BatchIterator</span>):
+    cropX, cropY <span class="pl-k">=</span> <span class="pl-c1">2</span>, <span class="pl-c1">2</span>
+    <span class="pl-k">def</span> <span class="pl-en">transform</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">Xb</span>, <span class="pl-smi">yb</span>):
+        Xb, yb <span class="pl-k">=</span> <span class="pl-c1">super</span>(CropBatchIterator, <span class="pl-v">self</span>).transform(Xb, yb)
+        shape <span class="pl-k">=</span> Xb.shape[<span class="pl-c1">0</span>]
+        width <span class="pl-k">=</span> <span class="pl-c1">28</span> <span class="pl-k">-</span> <span class="pl-v">self</span>.cropX
+        height <span class="pl-k">=</span> <span class="pl-c1">28</span> <span class="pl-k">-</span> <span class="pl-v">self</span>.cropY
+        new_Xb <span class="pl-k">=</span> np.zeros([shape, <span class="pl-c1">1</span>, width, height], <span class="pl-v">dtype</span><span class="pl-k">=</span>np.float32)
+        <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span> (shape):
+            dx <span class="pl-k">=</span> np.random.randint(<span class="pl-v">self</span>.cropX<span class="pl-k">+</span><span class="pl-c1">1</span>)
+            dy <span class="pl-k">=</span> np.random.randint(<span class="pl-v">self</span>.cropY<span class="pl-k">+</span><span class="pl-c1">1</span>)
+            new_Xb[i] <span class="pl-k">=</span> Xb[i, :, dy:dy<span class="pl-k">+</span>width, dx:dx<span class="pl-k">+</span>height]
+        <span class="pl-k">return</span> new_Xb, yb
+</pre></div>
+
+<p>We need to add a few lines to our network to make it work properly. You might notice the architecture changed a little, this is what I found to be a decent set of parameters (see <a href="#how-to-tune-the-number-of-kernels-(filters)-?">Fine tuning parameters</a>)</p>
 
 <div class="highlight highlight-source-python"><pre>net2 <span class="pl-k">=</span> NeuralNet(
     <span class="pl-v">layers</span> <span class="pl-k">=</span> [(<span class="pl-s"><span class="pl-pds">'</span>input<span class="pl-pds">'</span></span>, layers.InputLayer),
@@ -351,7 +390,7 @@ output  10            10   100.00   100.00   100.00   100.00</pre></div>
     <span class="pl-v">input_shape</span> <span class="pl-k">=</span> (<span class="pl-c1">None</span>, <span class="pl-c1">1</span>, <span class="pl-c1">26</span>, <span class="pl-c1">26</span>),
 
     <span class="pl-v">conv1_num_filters</span> <span class="pl-k">=</span>  <span class="pl-c1">13</span>, <span class="pl-v">conv1_filter_size</span> <span class="pl-k">=</span> (<span class="pl-c1">3</span>, <span class="pl-c1">3</span>),
-    <span class="pl-v">conv1_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.rectify,
+    <span class="pl-v">conv1_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.rectify, <span class="pl-c">#ReLu rectifier (default value)</span>
     <span class="pl-v">pool1_pool_size</span> <span class="pl-k">=</span> (<span class="pl-c1">2</span>, <span class="pl-c1">2</span>),
 
     <span class="pl-v">conv2_num_filters</span> <span class="pl-k">=</span> <span class="pl-c1">26</span>, <span class="pl-v">conv2_filter_size</span> <span class="pl-k">=</span> (<span class="pl-c1">2</span>, <span class="pl-c1">2</span>),
@@ -359,36 +398,31 @@ output  10            10   100.00   100.00   100.00   100.00</pre></div>
     <span class="pl-v">pool2_pool_size</span> <span class="pl-k">=</span> (<span class="pl-c1">2</span>, <span class="pl-c1">2</span>),
 
     <span class="pl-v">hidden1_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">128</span>, <span class="pl-v">hidden2_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">128</span>,
-    <span class="pl-v">output_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>,  <span class="pl-v">output_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.softmax,
+    <span class="pl-v">output_num_units</span> <span class="pl-k">=</span> <span class="pl-c1">10</span>, 
+    <span class="pl-v">output_nonlinearity</span> <span class="pl-k">=</span> lasagne.nonlinearities.softmax, <span class="pl-c">#Softmax classifier (default value)</span>
 
     <span class="pl-c"># Learning method.</span>
     <span class="pl-v">update</span> <span class="pl-k">=</span> nesterov_momentum,
     <span class="pl-v">update_learning_rate</span> <span class="pl-k">=</span> <span class="pl-c1">0.01</span>,
     <span class="pl-v">update_momentum</span> <span class="pl-k">=</span> <span class="pl-c1">0.9</span>,    
 
-    <span class="pl-c"># Calls the class CropBatchIterator as the training occurs</span>
+    <span class="pl-c"># Calls the class CropBatchIterator while training occurs</span>
     <span class="pl-c"># Doesn't affect GPU performance as the CPU deals with the</span>
     <span class="pl-c"># cropping operation.</span>
     <span class="pl-v">batch_iterator_train</span> <span class="pl-k">=</span> CropBatchIterator(<span class="pl-v">batch_size</span><span class="pl-k">=</span><span class="pl-c1">200</span>),
     <span class="pl-v">batch_iterator_test</span> <span class="pl-k">=</span> CropBatchIterator(<span class="pl-v">batch_size</span><span class="pl-k">=</span><span class="pl-c1">200</span>),
 
     <span class="pl-v">regression</span> <span class="pl-k">=</span> <span class="pl-c1">False</span>,
-    <span class="pl-v">max_epochs</span> <span class="pl-k">=</span> <span class="pl-c1">100</span>,
+    <span class="pl-v">max_epochs</span> <span class="pl-k">=</span> <span class="pl-c1">500</span>,
 
     <span class="pl-c"># Deeper layer information (learning capacity, coverage...)</span>
     <span class="pl-v">verbose</span> <span class="pl-k">=</span> <span class="pl-c1">2</span>, 
-
 )</pre></div>
 
 <h3>
-<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+<a id="credits" class="anchor" href="#credits" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Credits</h3>
 
-<p>You can <a href="https://help.github.com/articles/basic-writing-and-formatting-syntax/#mentioning-users-and-teams" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor’s GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
-
-<h3>
-<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support or Contact</h3>
-
-<p>Having trouble with Pages? Check out our <a href="https://help.github.com/pages">documentation</a> or <a href="https://github.com/contact">contact support</a> and we’ll help you sort it out.</p>
+<p>Daniel Nouri (<a href="https://github.com/dnouri" class="user-mention">@dnouri</a>) author of nolearn and Andrej Karpathy (<a href="https://github.com/karpathy" class="user-mention">@karpathy</a>) for his ML courses.</p>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/jcouvy/convnet-nolearn">Experimenting convolutional networks with nolearn</a> is maintained by <a href="https://github.com/jcouvy">jcouvy</a>.</span>
