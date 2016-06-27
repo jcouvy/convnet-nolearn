@@ -38,6 +38,7 @@
 <li><a href="#building-a-proper-architecture">Building a proper architecture</a></li>
 <li><a href="#how-to-tune-the-number-of-kernels-(filters)-?">Fine tuning parameters</a></li>
 <li><a href="#the-overfitting-problem">Dealing with overfitting</a></li>
+<li><a href="#Further%20improvements">Overfitting part 2 and further improvements</a></li>
 </ul>
 
 <h2>
@@ -441,6 +442,65 @@ output  10            10   100.00   100.00   100.00   100.00</pre></div>
      ..       .......       .......      .......      .......  .....
     500       0.00002       0.07326      0.00030      0.98884  8.71s
 </pre></div>
+
+<h2>
+<a id="further-improvements" class="anchor" href="#further-improvements" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Further improvements</h2>
+
+<p>We can still scratch a little more performance while reducing validation loss with simple changes. First we will need to add another type of layers called <code>Dropout</code>.</p>
+
+<blockquote>
+<p>Dropout is a technique that (...) prevents overfitting and
+provides a way of approximately combining exponentially many different neural network
+architectures efficiently. The term “dropout” refers to dropping out units (hidden and
+visible) in a neural network. By dropping a unit out, we mean temporarily removing it from
+the network, along with all its incoming and outgoing connections, as shown in Figure (a).
+The choice of which units to drop is random. In the simplest case, each unit is retained with
+a fixed probability p independent of other units, where p can be chosen using a validation
+set or can simply be set at 0.5, which seems to be close to optimal for a wide range of
+networks and tasks (...).
+<em>See</em> <a href="https://www.cs.toronto.edu/%7Ehinton/absps/JMLRdropout.pdf"><em>(Dropout: A Simple Way to Prevent Neural Networks from Overfitting)</em></a></p>
+</blockquote>
+
+<p><img src="https://cloud.githubusercontent.com/assets/19994887/16375020/a186beaa-3c59-11e6-892e-bf59d565257e.png" alt="dropoutlayer"></p>
+
+<div class="highlight highlight-source-python"><pre>net3 <span class="pl-k">=</span> NeuralNet(
+    <span class="pl-v">layers</span> <span class="pl-k">=</span> [(<span class="pl-s"><span class="pl-pds">'</span>input<span class="pl-pds">'</span></span>, layers.InputLayer),
+              <span class="pl-c">#(...),</span>
+              (<span class="pl-s"><span class="pl-pds">'</span>dropout<span class="pl-pds">'</span></span>, layers.DropoutLayer),
+              <span class="pl-c">#(...)</span>
+              ],
+    <span class="pl-v">dropout_p</span> <span class="pl-k">=</span> <span class="pl-c1">0.3</span>,</pre></div>
+
+<p>This is not the only change we will do to <code>net2</code>, remember why we decided to pick <code>nesterov momemtum</code> as learning method ? Optimizations that is ! What's good about the method is that it needs to have a fixed learning rate and momentum. What's even better is that <code>nolearn</code> allows us to dynamically change these values as the training occurs. We will create a custom class charged to update the value:</p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-c"># Converts numbers into 32b floats best used w/ GPUs.</span>
+<span class="pl-k">def</span> <span class="pl-en">float32</span>(<span class="pl-smi">k</span>):
+    <span class="pl-k">return</span> np.cast[<span class="pl-s"><span class="pl-pds">'</span>float32<span class="pl-pds">'</span></span>](k)
+
+<span class="pl-c"># Allows fine tuning of hyper-parameters during the learning process</span>
+<span class="pl-c"># Credits to (@Karpathy)</span>
+<span class="pl-k">class</span> <span class="pl-en">AdjustVariable</span>(<span class="pl-c1">object</span>):
+    <span class="pl-k">def</span> <span class="pl-c1">__init__</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">name</span>, <span class="pl-smi">start</span><span class="pl-k">=</span><span class="pl-c1">0.03</span>, <span class="pl-smi">stop</span><span class="pl-k">=</span><span class="pl-c1">0.001</span>):
+        <span class="pl-v">self</span>.name <span class="pl-k">=</span> name
+        <span class="pl-v">self</span>.start <span class="pl-k">=</span> start
+        <span class="pl-v">self</span>.stop <span class="pl-k">=</span> stop
+        <span class="pl-v">self</span>.ls <span class="pl-k">=</span> <span class="pl-c1">None</span>
+
+    <span class="pl-k">def</span> <span class="pl-c1">__call__</span>(<span class="pl-smi"><span class="pl-smi">self</span></span>, <span class="pl-smi">nn</span>, <span class="pl-smi">train_history</span>):
+        <span class="pl-k">if</span> <span class="pl-v">self</span>.ls <span class="pl-k">is</span> <span class="pl-c1">None</span>:
+            <span class="pl-v">self</span>.ls <span class="pl-k">=</span> np.linspace(<span class="pl-v">self</span>.start, <span class="pl-v">self</span>.stop, nn.max_epochs)
+
+        epoch <span class="pl-k">=</span> train_history[<span class="pl-k">-</span><span class="pl-c1">1</span>][<span class="pl-s"><span class="pl-pds">'</span>epoch<span class="pl-pds">'</span></span>]
+        new_value <span class="pl-k">=</span> float32(<span class="pl-v">self</span>.ls[epoch <span class="pl-k">-</span> <span class="pl-c1">1</span>])
+        <span class="pl-c1">getattr</span>(nn, <span class="pl-v">self</span>.name).set_value(new_value)</pre></div>
+
+<p>When called, <code>AdjustVariable</code> updates the parsed variable with their new value. But how does it work exactly ?<br>
+  <code>np.linspace</code> is a numpy function used to create a 1D array ranging from [start, stop] of length max_epochs so that the new values are evenly distributed no matter the duration. <code>nolearn</code> allows us to search values in the history of the training with <code>train_history</code>. We save the latest <code>epoch</code> value and set the new values correspondingly after converting them to a GPU oriented format.</p>
+
+<div class="highlight highlight-source-python"><pre>    on_epoch_finished<span class="pl-k">=</span>[
+        AdjustVariable(<span class="pl-s"><span class="pl-pds">'</span>update_learning_rate<span class="pl-pds">'</span></span>, <span class="pl-v">start</span><span class="pl-k">=</span><span class="pl-c1">0.03</span>, <span class="pl-v">stop</span><span class="pl-k">=</span><span class="pl-c1">0.0001</span>),
+        AdjustVariable(<span class="pl-s"><span class="pl-pds">'</span>update_momentum<span class="pl-pds">'</span></span>, <span class="pl-v">start</span><span class="pl-k">=</span><span class="pl-c1">0.9</span>, <span class="pl-v">stop</span><span class="pl-k">=</span><span class="pl-c1">0.999</span>),
+        ],</pre></div>
 
 <h3>
 <a id="credits" class="anchor" href="#credits" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Credits</h3>
