@@ -22,7 +22,7 @@
       <h3>
 <a id="who-am-i-" class="anchor" href="#who-am-i-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Who am I ?</h3>
 
-<p>I am a french undergraduate student in CS at the University of Bordeaux trying to learn more about <em>machine learning</em>,  <em>security</em> and <em>virtual reality</em>. This blog aims to help beginners like me, eager to take their first steps in machine learning. I am by no mean an expert of the field (I recommend you to peak at the urls given throughout the tutorial) nor is English my first language so please consider my work with a that in mind.</p>
+<p>I am a french undergraduate student in CS at the University of Bordeaux trying to learn more about <em>machine learning</em>,  <em>security</em>. This blog aims to help beginners like me, eager to take their first steps in machine learning. I am by no mean an expert of the field (I recommend you to peak at the urls given throughout the tutorial) nor is English my first language so please consider my work with a that in mind.</p>
 
 <h2>
 <a id="table-of-contents" class="anchor" href="#table-of-contents" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Table of Contents</h2>
@@ -38,7 +38,7 @@
 <li><a href="#building-a-proper-architecture">Building a proper architecture</a></li>
 <li><a href="#how-to-tune-the-number-of-kernels-(filters)-?">Fine tuning parameters</a></li>
 <li><a href="#the-overfitting-problem">Dealing with overfitting</a></li>
-<li><a href="#Further%20improvements">Overfitting part 2 and further improvements</a></li>
+<li><a href="#further-improvements">Further improvements</a></li>
 </ul>
 
 <h2>
@@ -461,7 +461,7 @@ networks and tasks (...).
 <em>See</em> <a href="https://www.cs.toronto.edu/%7Ehinton/absps/JMLRdropout.pdf"><em>(Dropout: A Simple Way to Prevent Neural Networks from Overfitting)</em></a></p>
 </blockquote>
 
-<p align="center"><img src="https://cloud.githubusercontent.com/assets/19994887/16375020/a186beaa-3c59-11e6-892e-bf59d565257e.png" alt="dropoutlayer"></p>
+<p><img src="https://cloud.githubusercontent.com/assets/19994887/16375020/a186beaa-3c59-11e6-892e-bf59d565257e.png" alt="dropoutlayer"></p>
 
 <div class="highlight highlight-source-python"><pre>net3 <span class="pl-k">=</span> NeuralNet(
     <span class="pl-v">layers</span> <span class="pl-k">=</span> [(<span class="pl-s"><span class="pl-pds">'</span>input<span class="pl-pds">'</span></span>, layers.InputLayer),
@@ -494,13 +494,32 @@ networks and tasks (...).
         new_value <span class="pl-k">=</span> float32(<span class="pl-v">self</span>.ls[epoch <span class="pl-k">-</span> <span class="pl-c1">1</span>])
         <span class="pl-c1">getattr</span>(nn, <span class="pl-v">self</span>.name).set_value(new_value)</pre></div>
 
-<p>When called, <code>AdjustVariable</code> updates the parsed variable with their new value. But how does it work exactly ?<br>
-  <code>np.linspace</code> is a numpy function used to create a 1D array ranging from [start, stop] of length max_epochs so that the new values are evenly distributed no matter the duration. <code>nolearn</code> allows us to search values in the history of the training with <code>train_history</code>. We save the latest <code>epoch</code> value and set the new values correspondingly after converting them to a GPU oriented format.</p>
+<p>When called, <code>AdjustVariable</code> updates the parsed variable with its new value. But how does it work exactly ?<br>
+  <code>np.linspace</code> is a numpy function used to create a 1D array ranging from [start, stop] of length max_epochs so that the new values are evenly distributed no matter the duration. <code>nolearn</code> allows us to search values in the history of the training with <code>train_history</code>. We save the latest <code>epoch</code> value and set the new values correspondingly using the Python built-in function <code>getattr</code>. Note that we need to convert the value to a GPU oriented format <code>np.float32</code>.</p>
+
+<p>Now that we're done with the class we have to inform <code>net3</code> that it needs to use our brand new class, with <code>nolearn</code> we can do it pretty easily:</p>
 
 <div class="highlight highlight-source-python"><pre>    on_epoch_finished<span class="pl-k">=</span>[
         AdjustVariable(<span class="pl-s"><span class="pl-pds">'</span>update_learning_rate<span class="pl-pds">'</span></span>, <span class="pl-v">start</span><span class="pl-k">=</span><span class="pl-c1">0.03</span>, <span class="pl-v">stop</span><span class="pl-k">=</span><span class="pl-c1">0.0001</span>),
         AdjustVariable(<span class="pl-s"><span class="pl-pds">'</span>update_momentum<span class="pl-pds">'</span></span>, <span class="pl-v">start</span><span class="pl-k">=</span><span class="pl-c1">0.9</span>, <span class="pl-v">stop</span><span class="pl-k">=</span><span class="pl-c1">0.999</span>),
         ],</pre></div>
+
+<p>There is one last change to make before fitting our net. In order to dynamically change <code>update_learning_rate</code> and <code>update_momentum</code> we have to change the variable type to a Theano-type named <code>shared variable</code>. We never spoke of Theano as it is not the purpose of this write-up however I will briefly explain what it is:</p>
+
+<blockquote>
+<p>Theano is a Python library that lets you to define, optimize, and evaluate mathematical expressions, especially ones with multi-dimensional arrays (numpy.ndarray). Using Theano it is possible to attain speeds rivaling hand-crafted C implementations for problems involving large amounts of data.</p>
+</blockquote>
+
+<p>We saw that Nolearn is built on top of Lasagne right ? Well, Lasagne is to Theano as Nolearn is to Lasagne ! Nolearn's goal is to abstract as much as possible every concept in order to keep things simple and clear. Theano however, only wanted to leave most of the tedious mathematical part hidden. While Nolearn might be simpler to understand for beginners, Theano allows much more customization (such as what we're trying to achieve). Thankfully since Nolearn is a wrapper built around Theano, we can use both in the same program.  </p>
+
+<p>A <code>shared variable</code> is a « Variable with Storage that is shared between functions that it appears in », Theano uses a lot of symbolic expressions (see: <a href="https://en.wikipedia.org/wiki/S-expression">S-expression</a>) as it helps generating C  code.</p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> theano</pre></div>
+
+<div class="highlight highlight-source-python"><pre>update_learning_rate <span class="pl-k">=</span> theano.shared(float32(<span class="pl-c1">0.03</span>)),
+update_momentum <span class="pl-k">=</span> theano.shared(float32(<span class="pl-c1">0.9</span>)), </pre></div>
+
+<p>Finally ! We have everything ready for a last run. This is what <code>net3</code> had to offer after 1000 epochs of training:</p>
 
 <h3>
 <a id="credits" class="anchor" href="#credits" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Credits</h3>
