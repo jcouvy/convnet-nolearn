@@ -114,7 +114,7 @@ a {
   font-weight: normal;
   color: #159957; }
 .main-content p {
-  align: center;
+  text-align: justify;
   margin-bottom: 1em; }
 .main-content code {
   padding: 2px 4px;
