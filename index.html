@@ -514,7 +514,8 @@ networks and tasks (...).
 <p>There is one last change to make before fitting our net. In order to dynamically change <code>update_learning_rate</code> and <code>update_momentum</code> we have to change the variable type to a Theano-type named <code>shared variable</code>. We never spoke of Theano as it is not the purpose of this write-up however I will briefly explain what it is:</p>
 
 <blockquote>
-<p>Theano is a Python library that lets you to define, optimize, and evaluate mathematical expressions, especially ones with multi-dimensional arrays (numpy.ndarray). Using Theano it is possible to attain speeds rivaling hand-crafted C implementations for problems involving large amounts of data.</p>
+<p>Theano is a Python library that lets you to define, optimize, and evaluate mathematical expressions, especially ones with multi-dimensional arrays (numpy.ndarray). Using Theano it is possible to attain speeds rivaling hand-crafted C implementations for problems involving large amounts of data.<br>
+<em>(source: <a href="http://deeplearning.net/software/theano/introduction.html#introduction">http://deeplearning.net/software/theano/introduction.html#introduction</a>)</em></p>
 </blockquote>
 
 <p>We saw that Nolearn is built on top of Lasagne right ? Well, Lasagne is to Theano as Nolearn is to Lasagne ! Nolearn's goal is to abstract as much as possible every concept in order to keep things simple and clear. Theano however, only wanted to leave most of the tedious mathematical part hidden. While Nolearn might be simpler to understand for beginners, Theano allows much more customization (such as what we're trying to achieve). Thankfully since Nolearn is a wrapper built around Theano, we can use both in the same program.  </p>
