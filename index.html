@@ -514,9 +514,9 @@ networks and tasks (...).
 
 <p>A <code>shared variable</code> is a « Variable with Storage that is shared between functions that it appears in », Theano uses a lot of symbolic expressions (see: <a href="https://en.wikipedia.org/wiki/S-expression">S-expression</a>) as it helps generating C  code.</p>
 
-<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> theano</pre></div>
-
-<div class="highlight highlight-source-python"><pre>update_learning_rate <span class="pl-k">=</span> theano.shared(float32(<span class="pl-c1">0.03</span>)),
+<div class="highlight highlight-source-python"><pre><span class="pl-k">import</span> theano
+<span class="pl-c"># (...)</span>
+update_learning_rate <span class="pl-k">=</span> theano.shared(float32(<span class="pl-c1">0.03</span>)),
 update_momentum <span class="pl-k">=</span> theano.shared(float32(<span class="pl-c1">0.9</span>)), </pre></div>
 
 <p>Finally ! We have everything ready for a last run. This is what <code>net3</code> had to offer after 1000 epochs of training:</p>
