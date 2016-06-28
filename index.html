@@ -89,7 +89,7 @@
     <span class="pl-v">layer2_param1</span> <span class="pl-k">=</span> <span class="pl-c1">...</span>, <span class="pl-v">layer2_param2</span> <span class="pl-k">=</span> <span class="pl-c1">...</span>,
 )</pre></div>
 
-<p><strong>Bear in mind that you need to use the pre-defined parameters name or an error will occur</strong></p>
+<p><strong>Bear in mind that you need to use the pre-defined parameters names or an error will occur</strong></p>
 
 <p>You are probably not yet familiar with each different layers, no worries we are going to cover that right now. Every single available layer is already implemented in Lasagne and that's good news. Despite being young its documentation is rich and the community is helpful, the following link will get you to the <a href="https://lasagne.readthedocs.io/en/latest/modules/layers.html">Lasagne official documentation</a> where each layer is described.</p>
 
@@ -213,29 +213,36 @@ net0.fit(trainX, trainY)</pre></div>
 
 <hr>
 
-<p>The following graph is a comparison of the commonly used learning methods:</p>
+<p>We just learned that the origins of artificial neural networks are found in biomimetism. Our goal is to build a network able to learn like a brain would do. However not every problem can be practically adapted into code by a programmer, this is where learning algorithms become useful. There are three major learning paradigms :</p>
+
+<ul>
+<li>Supervised learning (the one we will focus on)</li>
+<li>Unsupervised learning</li>
+<li>Reinforcement learning</li>
+</ul>
+
+<p>There are plenty of information about these methods elsewhere on the web or in your favorite library so we won't cover them up here. The following graph is a comparison of the commonly used supervised learning methods:</p>
 
 <p><img src="https://cloud.githubusercontent.com/assets/19994887/16196236/91019214-36fd-11e6-9e9b-1113334e7261.png" alt="learningmethod"></p>
 
-<p>Our network will use <code>nesterov momentum</code>, it has good performance and allows us to tweak the <code>learning rate</code> and <code>momentum</code> as the training occurs (better optimization potential).</p>
+<p>Our network will use <code>nesterov momentum</code> for two reasons, firstly it has good performance and secondly it requires to specify both a learning rate and momentum values (this will be helpful later).</p>
 
 <h2>
 <a id="building-a-proper-architecture" class="anchor" href="#building-a-proper-architecture" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Building a proper architecture</h2>
 
 <hr>
 
-<p>To obtain better results we're going to need more than convolution layers. Most ConvNets are constituted by a successsion of layers as follows (see <a href="http://cs231n.github.io/convolutional-networks/#layerpat">the course CS231n from Stanford University</a>):</p>
+<p>To obtain better results than <code>net0</code> we are going to need more than convolution layers. Most ConvNets are constituted by a succession of different layers following a specific pattern (see <a href="http://cs231n.github.io/convolutional-networks/#layerpat">the course CS231n from Stanford University</a>):</p>
+
+<blockquote>
+<p>The most common form of a ConvNet architecture stacks a few CONV-RELU layers, follows them with POOL layers, and repeats this pattern until the image has been merged spatially to a small size. At some point, it is common to transition to fully-connected layers. The last fully-connected layer holds the output, such as the class scores. In other words, the most common ConvNet architecture follows the pattern:  </p>
+</blockquote>
 
 <p><code>INPUT -&gt; [[CONV -&gt; RELU]*N -&gt; POOL?]*M -&gt; [FC -&gt; RELU]*K -&gt; FC</code></p>
 
-<ul>
-<li>Input Layer</li>
-<li>Convolution Layer + ReLu</li>
-<li>Pooling Layer</li>
-<li>(...)Repeat</li>
-<li>Fully Connected Layer (aka Hidden Layers)</li>
-<li>Output Layer</li>
-</ul>
+<blockquote>
+<p>Where the <code>*</code> indicates repetition, and the <code>POOL?</code> indicates an optional pooling layer. Moreover, <code>N &gt;= 0</code> (and usually <code>N &lt;= 3</code>), <code>M &gt;= 0</code>, <code>K &gt;= 0</code> (and usually <code>K &lt; 3</code>).</p>
+</blockquote>
 
 <p>Considering all this we will add a few layers to <code>net0</code>:</p>
 
