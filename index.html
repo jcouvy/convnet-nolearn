@@ -535,7 +535,7 @@ update_momentum <span class="pl-k">=</span> theano.shared(float32(<span class="p
 
 <p><img src="https://cloud.githubusercontent.com/assets/19994887/16452831/c9130d9a-3e0a-11e6-9e8e-c9f3f8900340.png" alt="net2net3"></p>
 
-<p>We notice better accuracy, lower training loss but also a more consistent learning potential (see <code>train/val</code> column in the following array). That means the network can still learn more, while this is not a great deal on MNIST since we already have good results, it is really important on more complex problems.</p>
+<p>We notice increased training loss (due to dropout layers deactivating nodes), better accuracy, lower validation loss but also a more consistent learning potential (see <code>train/val</code> column in the following array). That means the network can still learn more ! While this is not a great deal on MNIST since we already have good results, it is really important on more complex problems.</p>
 
 <div class="highlight highlight-source-shell"><pre>  epoch    train loss    valid loss    train/val    valid acc  dur
 -------  ------------  ------------  -----------  -----------  -----
@@ -558,6 +558,13 @@ update_momentum <span class="pl-k">=</span> theano.shared(float32(<span class="p
     900       0.00227       0.04094      0.05544      0.99337  8.70s
      ..       .......       .......      .......      .......  .....
    1000       0.00163       0.05022      0.03253      0.99314  8.69s</pre></div>
+
+<p>That's it we managed to build a convolutional network able to recognize hand-written digits with an accuracy of 99.3%, pretty close from human performance (one could say better).  </p>
+
+<p>I hope this walk through helped some of you (◕ ◡ ◕).</p>
+
+<h3>
+<a id="bonus-part-experiment-on-how-to-find-optimized-kernel-values" class="anchor" href="#bonus-part-experiment-on-how-to-find-optimized-kernel-values" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Bonus part: experiment on how to find optimized kernel values</h3>
 
 <h3>
 <a id="credits" class="anchor" href="#credits" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Credits</h3>
