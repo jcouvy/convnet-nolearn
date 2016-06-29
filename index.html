@@ -531,7 +531,33 @@ networks and tasks (...).
 update_learning_rate <span class="pl-k">=</span> theano.shared(float32(<span class="pl-c1">0.03</span>)),
 update_momentum <span class="pl-k">=</span> theano.shared(float32(<span class="pl-c1">0.9</span>)), </pre></div>
 
-<p>Finally ! We have everything ready for a last run. This is what <code>net3</code> had to offer after 1000 epochs of training:</p>
+<p>Let's now compare <code>net2</code> and <code>net3</code>:</p>
+
+<p><img src="https://cloud.githubusercontent.com/assets/19994887/16452831/c9130d9a-3e0a-11e6-9e8e-c9f3f8900340.png" alt="net2net3"></p>
+
+<p>We notice better accuracy, lower training loss but also a more consistent learning potential (see <code>train/val</code> column in the following array). That means the network can still learn more, while this is not a great deal on MNIST since we already have good results, it is really important on more complex problems.</p>
+
+<div class="highlight highlight-source-shell"><pre>  epoch    train loss    valid loss    train/val    valid acc  dur
+-------  ------------  ------------  -----------  -----------  -----
+      1       0.76528       0.21292      3.59415      0.92663  8.69s
+     ..       .......       .......      .......      .......  .....
+    100       0.01661       0.03804      0.43662      0.99012  8.70s
+     ..       .......       .......      .......      .......  .....
+    300       0.00601       0.04432      0.13559      0.99140  8.69s
+     ..       .......       .......      .......      .......  .....
+    400       0.00533       0.04996      0.10667      0.99058  8.70s
+     ..       .......       .......      .......      .......  .....
+    500       0.00488       0.04629      0.10548      0.99186  8.70s
+     ..       .......       .......      .......      .......  .....
+    600       0.00317       0.04891      0.06490      0.99163  8.69s
+     ..       .......       .......      .......      .......  .....
+    700       0.00317       0.04387      0.07222      0.99244  8.73s
+     ..       .......       .......      .......      .......  .....
+    800       0.00256       0.05217      0.04900      0.99105  8.70s
+     ..       .......       .......      .......      .......  .....
+    900       0.00227       0.04094      0.05544      0.99337  8.70s
+     ..       .......       .......      .......      .......  .....
+   1000       0.00163       0.05022      0.03253      0.99314  8.69s</pre></div>
 
 <h3>
 <a id="credits" class="anchor" href="#credits" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Credits</h3>
