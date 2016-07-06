@@ -2,7 +2,7 @@ import cPickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-DATA_PATH = '/net/www/jcouvy/data/'
+DATA_PATH = '../input'
 
 # --------------- Loading Data-set ---------------
 
