@@ -107,8 +107,6 @@ a {
 .main-content :first-child {
   margin-top: 0; }
 .main-content img {
-  display: block;
-  margin: auto;
   max-width: 100%; }
 .main-content h1, .main-content h2, .main-content h3, .main-content h4, .main-content h5, .main-content h6 {
   margin-top: 2rem;
@@ -116,7 +114,6 @@ a {
   font-weight: normal;
   color: #159957; }
 .main-content p {
-  text-align: justify;
   margin-bottom: 1em; }
 .main-content code {
   padding: 2px 4px;

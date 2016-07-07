@@ -22,7 +22,7 @@
       <h3>
 <a id="who-am-i-" class="anchor" href="#who-am-i-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Who am I ?</h3>
 
-<p>I am a french undergraduate student in CS at the University of Bordeaux trying to learn more about <em>machine learning</em> and  <em>security</em>. This blog aims to help beginners like me, eager to take their first steps in machine learning. I am by no mean an expert of the field (I recommend you to peak at the urls given throughout the tutorial) nor is English my first language so please consider my work with a that in mind.</p>
+<p>I am a french undergraduate student in CS at the University of Bordeaux trying to learn more about <em>machine learning</em>,  <em>security</em>. This blog aims to help beginners like me, eager to take their first steps in machine learning. I am by no mean an expert of the field (I recommend you to peak at the urls given throughout the tutorial) nor is English my first language so please consider my work with a that in mind.</p>
 
 <h2>
 <a id="table-of-contents" class="anchor" href="#table-of-contents" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Table of Contents</h2>
@@ -39,6 +39,8 @@
 <li><a href="#how-to-tune-the-number-of-kernels-(filters)-?">Fine tuning parameters</a></li>
 <li><a href="#the-overfitting-problem">Dealing with overfitting</a></li>
 <li><a href="#further-improvements">Further improvements</a></li>
+<li><a href="#how-to-visualize-your-data-?">Toolbox: how to visualize your data</a></li>
+<li><a href="#a-quick-tip-to-speed-up-your-net">Pro-tip: speed-up your network</a></li>
 </ul>
 
 <h2>
@@ -299,7 +301,7 @@ net0.fit(trainX, trainY)</pre></div>
 
 <p>Now this is a tricky part... From what I have read and learned it is mostly done empirically. One could say it is "half intuition, half black magic". A team of Google researchers tried to explain the importance of proper initialization and gave some guidelines, see <a href="http://arxiv.org/abs/1512.00567">Rethinking the Inception Architecture for Computer Vision</a>.</p>
 
-<p>For the moment a simple way of proceeding is, firstly, to enable <code>verbose=2</code> (it will give us more information about our network's learning capacity of the coverage of its data) then fix a small amount of iteration <code>max_epochs=10</code> and test the best combination of kernel sizes (best ratio accuracy/duration for example). We will try to experiment a better way of finding optimal values later on (see part 2).</p>
+<p>For the moment a simple way of proceeding is, firstly, to enable <code>verbose=2</code> (it will give us more information about our network's learning capacity of the coverage of its data) then fix a small amount of iteration <code>max_epochs=10</code> and test the best combination of kernel sizes (best ratio accuracy/duration for example). You may want to cover close to 100% of the image, however as MNIST digits don't cover the whole 28*28 pixels it is acceptable to have a lower coverage value.</p>
 
 <p>Lets take a look at the input of <code>verbose=2</code> :</p>
 
@@ -362,7 +364,7 @@ output  10            10   100.00   100.00   100.00   100.00</pre></div>
 <li>We want to get rid of it as best as we can.</li>
 </ul>
 
-<p>There are different ways to deal with overfitting, in <code>net2</code> we will try to use the <code>BatchIterator</code> provided by <code>nolearn</code> to simulate a larger amount of data. This technique is called <strong>Data augmentation</strong>.</p>
+<p>There are different ways to deal with overfitting, in <code>net2</code> we will try to use the <code>BatchIterator</code> provided by <code>nolearn</code> to simulate a larger amount of data. This technique is called <strong>Data augmentation</strong>. The general idea is apply on-the-fly modifications (thanks to <code>BatchIterator</code>) to your data-set without altering the labels. Here we will randomly crop the image by 2 pixels.</p>
 
 <div class="highlight highlight-source-python"><pre><span class="pl-k">from</span> nolearn.lasagne <span class="pl-k">import</span> BatchIterator, <span class="pl-c">#...</span>
 
@@ -472,7 +474,7 @@ networks and tasks (...).
 <em>See</em> <a href="https://www.cs.toronto.edu/%7Ehinton/absps/JMLRdropout.pdf"><em>(Dropout: A Simple Way to Prevent Neural Networks from Overfitting)</em></a></p>
 </blockquote>
 
-<p style="text-align: center"><img src="https://cloud.githubusercontent.com/assets/19994887/16375020/a186beaa-3c59-11e6-892e-bf59d565257e.png" alt="dropoutlayer"></p>
+<p><img src="https://cloud.githubusercontent.com/assets/19994887/16375020/a186beaa-3c59-11e6-892e-bf59d565257e.png" alt="dropoutlayer"></p>
 
 <div class="highlight highlight-source-python"><pre>net3 <span class="pl-k">=</span> NeuralNet(
     <span class="pl-v">layers</span> <span class="pl-k">=</span> [(<span class="pl-s"><span class="pl-pds">'</span>input<span class="pl-pds">'</span></span>, layers.InputLayer),
@@ -564,9 +566,41 @@ update_momentum <span class="pl-k">=</span> theano.shared(float32(<span class="p
 <p>I hope this walk through helped some of you \(◕ ◡ ◕\).</p>
 
 <h3>
-<a id="bonus-part-experiment-on-how-to-find-optimized-kernel-values" class="anchor" href="#bonus-part-experiment-on-how-to-find-optimized-kernel-values" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Bonus part: experiment on how to find optimized kernel values</h3>
+<a id="how-to-visualize-your-data-" class="anchor" href="#how-to-visualize-your-data-" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to visualize your data ?</h3>
 
 <hr>
+
+<p><code>nolearn</code> offers easy ways of representing the evolution of your network, finding errors ... </p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">from</span> nolearn.lasagne.visualize <span class="pl-k">import</span> draw_to_file <span class="pl-c">#draw_to_notebook if using IPython Notebook</span>
+<span class="pl-k">from</span> nolearn.lasagne.visualize <span class="pl-k">import</span> plot_loss
+<span class="pl-k">from</span> nolearn.lasagne.visualize <span class="pl-k">import</span> plot_conv_weights
+<span class="pl-k">from</span> nolearn.lasagne.visualize <span class="pl-k">import</span> plot_conv_activity
+<span class="pl-k">from</span> nolearn.lasagne.visualize <span class="pl-k">import</span> plot_occlusion
+<span class="pl-k">from</span> nolearn.lasagne.visualize <span class="pl-k">import</span> plot_saliency</pre></div>
+
+<p>With these you can simply add a few lines at the end of your program, say we want plot the validation loss of our last fitting. It is as simple as :</p>
+
+<div class="highlight highlight-source-python"><pre>plot_loss(network_name)
+plt.savefig(<span class="pl-s"><span class="pl-pds">"</span>path_to_results/plotloss.png<span class="pl-pds">"</span></span>)</pre></div>
+
+<p>The <a href="https://github.com/dnouri/nolearn/blob/master/nolearn/lasagne/visualize.py">source code</a> can be found on <code>nolearn</code> github repository.</p>
+
+<h3>
+<a id="a-quick-tip-to-speed-up-your-net" class="anchor" href="#a-quick-tip-to-speed-up-your-net" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A quick tip to speed up your net</h3>
+
+<p>This is something that I found recently while browsing the Lasagne API, it offers some CUDA-specific re-implementation of some its layers (mostly for convolution nets, how fortunate !). Remember that <code>CUDA</code> requires you to use a GPU to train your network, using these layers will NOT work under any other circumstances.  </p>
+
+<p>If you want to benefit from these layers without having to change your architecture, add these imports to your code:</p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">try</span>:
+    <span class="pl-k">from</span> lasagne.layers.cuda_convnet <span class="pl-k">import</span> Conv2DCCLayer <span class="pl-k">as</span> Conv2DLayer
+    <span class="pl-k">from</span> lasagne.layers.cuda_convnet <span class="pl-k">import</span> MaxPool2DCCLayer <span class="pl-k">as</span> MaxPool2DLayer
+<span class="pl-k">except</span> <span class="pl-c1">ImportError</span>:
+    Conv2DLayer <span class="pl-k">=</span> layers.Conv2DLayer
+    MaxPool2DLayer <span class="pl-k">=</span> layers.MaxPool2DLayer</pre></div>
+
+<p>Otherwise head-on to <a href="https://lasagne.readthedocs.io/en/latest/modules/layers/cuda_convnet.html">the documentation</a> and use the proper names.</p>
 
 <h3>
 <a id="credits" class="anchor" href="#credits" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Credits</h3>
