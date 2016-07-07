@@ -589,6 +589,8 @@ plt.savefig(<span class="pl-s"><span class="pl-pds">"</span>path_to_results/plot
 <h3>
 <a id="a-quick-tip-to-speed-up-your-net" class="anchor" href="#a-quick-tip-to-speed-up-your-net" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A quick tip to speed up your net</h3>
 
+<hr>
+
 <p>This is something that I found recently while browsing the Lasagne API, it offers some CUDA-specific re-implementation of some its layers (mostly for convolution nets, how fortunate !). Remember that <code>CUDA</code> requires you to use a GPU to train your network, using these layers will NOT work under any other circumstances.  </p>
 
 <p>If you want to benefit from these layers without having to change your architecture, add these imports to your code:</p>
