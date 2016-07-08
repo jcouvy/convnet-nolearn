@@ -1,16 +1,10 @@
 import theano
+import numpy as np
+
 import lasagne
 from lasagne import layers
 from lasagne.updates import nesterov_momentum
 from lasagne.nonlinearities import softmax, rectify
-
-from nolearn.lasagne import NeuralNet, BatchIterator, PrintLayerInfo, TrainSplit
-from nolearn.lasagne.visualize import plot_loss
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
 try:
     from lasagne.layers.cuda_convnet import Conv2DCCLayer as Conv2DLayer
     from lasagne.layers.cuda_convnet import MaxPool2DCCLayer as MaxPool2DLayer
@@ -18,6 +12,18 @@ except ImportError:
     Conv2DLayer = layers.Conv2DLayer
     MaxPool2DLayer = layers.MaxPool2DLayer
 
+    
+from nolearn.lasagne import (NeuralNet,
+                             BatchIterator,
+                             PrintLayerInfo,
+                             TrainSplit)
+from nolearn.lasagne import visualize
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.metrics import confusion_matrix
     
 
 DATA_PATH = '/net/www/jcouvy/data/'
@@ -216,10 +222,7 @@ def build_network(layers):
 X_train, y_train, X_test = load_data()
 visualize_data(X_train, y_train)
 
-mnist = build_network(deep_convnet)
+mnist = build_network(dropout_net)
 mnist.fit(X_train, y_train)
 mnist.predict(X_test)
-
-plot_loss(nn)
-plt.savefig("../results/mnist/plotloss.png")
 
