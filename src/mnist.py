@@ -1,44 +1,128 @@
-# -------------------- Loading Data-set --------------------
-
-import cPickle
-import pandas as pd
-import numpy as np
-import sys
-
-# The competition datafiles are in the directory ../input
-# Read training and test data files.
-train = pd.read_csv("../input/train.csv")
-test  = pd.read_csv("../input/test.csv")
-
-train_images = train.iloc[:,1:].values
-train_labels = train[[0]].values.ravel()
-
-# Reshape and normalize training data
-X_train = train_images.reshape(train.shape[0], 1, 28, 28).astype(np.float32)
-X_train -= X_train.mean()
-X_train /= X_train.std()
-
-# Reshape and normalize test data
-X_test = test.values.reshape(test.shape[0], 1, 28, 28).astype(np.float32)
-X_test -= X_train.mean()
-X_test /= X_train.std()
-
-y_train = train_labels.astype(np.int32)
-
-# -------------------- Building the network -------------------
-
 import theano
 import lasagne
 from lasagne import layers
+from lasagne.updates import nesterov_momentum
+from lasagne.nonlinearities import softmax, rectify
+
+from nolearn.lasagne import NeuralNet, BatchIterator, PrintLayerInfo, TrainSplit
+from nolearn.lasagne.visualize import plot_loss
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
 try:
     from lasagne.layers.cuda_convnet import Conv2DCCLayer as Conv2DLayer
     from lasagne.layers.cuda_convnet import MaxPool2DCCLayer as MaxPool2DLayer
 except ImportError:
     Conv2DLayer = layers.Conv2DLayer
     MaxPool2DLayer = layers.MaxPool2DLayer
-from lasagne.updates import nesterov_momentum
-from lasagne.nonlinearities import softmax, rectify
-from nolearn.lasagne import NeuralNet, BatchIterator, PrintLayerInfo, TrainSplit
+
+    
+
+DATA_PATH = '/net/www/jcouvy/data/'
+
+# -------------------- Loading Data-set --------------------
+
+def load_data():
+    # The competition datafiles are in the directory ../input
+    # Read training and test data files.
+    train = pd.read_csv(DATA_PATH+"../input/train.csv")
+    test  = pd.read_csv(DATA_PATH+"../input/test.csv")
+
+    train_images = train.iloc[:,1:].values
+    train_labels = train[[0]].values.ravel()
+
+    # Reshape and normalize training data
+    X_train = train_images.reshape(train.shape[0], 1, 28, 28).astype(np.float32)
+    X_train -= X_train.mean()
+    X_train /= X_train.std()
+
+    # Reshape and normalize test data
+    X_test = test.values.reshape(test.shape[0], 1, 28, 28).astype(np.float32)
+    X_test -= X_train.mean()
+    X_test /= X_train.std()
+
+    y_train = train_labels.astype(np.int32)
+    
+    return X_train, y_train, X_test
+
+def visualize_data(X, y):
+    figs, axes = plt.subplots(4, 4, figsize=(6, 6))
+    for i in range(4):
+        for j in range(4):
+            axes[i, j].imshow(-X[i + 4 * j].reshape(28, 28), cmap='gray', interpolation='none')
+            axes[i, j].set_xticks([])
+            axes[i, j].set_yticks([])
+            axes[i, j].set_title("Label: {}".format(y[i + 4 * j]))
+            axes[i, j].axis('off')
+
+# --------------- Network architectures ---------------
+        
+dropout_net = [
+    (layers.InputLayer, {'shape':(None, 1, 24, 24)}),
+
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 3}),
+    (layers.MaxPool2DLayer, {'pool_size': 2}),
+    (layers.DropoutLayer, {'p': 0.3}),
+
+    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': 3}),
+    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': 3}),
+    (layers.MaxPool2DLayer, {'pool_size': 2}),
+    (layers.DropoutLayer, {'p': 0.3}),
+
+    (layers.DenseLayer, {'num_units': 1000, 'nonlinearity': rectify}),
+    (layers.DropoutLayer, {'p': 0.3}),
+    (layers.DenseLayer, {'num_units': 100,   'nonlinearity': softmax}),
+    ]
+    
+
+network_in_network = [
+    (layers.InputLayer,  {'shape': (None, 3, 32, 32)}),
+
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 5, 'pad': 2, 'stride': 1}),
+    (layers.NINLayer, {'num_units': 32}),
+    (layers.NINLayer, {'num_units': 16}),
+    (layers.DropoutLayer, {'p': 0.5}),
+
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 5, 'pad': 2, 'stride': 1}),
+    (layers.NINLayer, {'num_units': 32}),
+    (layers.NINLayer, {'num_units': 16}),
+    (layers.DropoutLayer, {'p': 0.5}),
+        
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 5, 'pad': 2, 'stride': 1}),
+    (layers.NINLayer, {'num_units': 32}),
+    (layers.NINLayer, {'num_units': 10}),
+
+    (layers.GlobalPoolLayer, {}),
+    (layers.DenseLayer, {'num_units':  10, 'nonlinearity': softmax})       
+    ]
+
+    
+deep_convnet = [
+    (layers.InputLayer, {'shape': (None, 1, 24, 24)}),
+
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.MaxPool2DLayer, {'pool_size': (2, 2)}),
+
+    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
+    (layers.MaxPool2DLayer, {'pool_size': (2, 2)}),
+
+    (layers.DenseLayer, {'num_units': 64, 'nonlinearity': rectify}),
+    (layers.DropoutLayer, {'p': 0.5}),
+    (layers.DenseLayer, {'num_units': 64, 'nonlinearity': softmax}),
+    ]
+
+# -------------------- Building the network -------------------
+
 
 # Converts numbers into 32b floats best used w/ GPUs.
 def float32(k):
@@ -61,101 +145,6 @@ class AdjustVariable(object):
         new_value = float32(self.ls[epoch - 1])
         getattr(nn, self.name).set_value(new_value)
         
-def dict_slice(arr, sl):
-    """
-    Helper method to slice all arrays contained in a dictionary.
-    """
-    if isinstance(arr, dict):
-        ret = OrderedDict()
-        for k, v in arr.items():
-            ret[k] = v[sl]
-        return ret
-    else:
-        return arr[sl]
-
-def list_slice(arr, sl):
-    """
-    Helper method to slice all arrays contained in a list.
-    """
-    if isinstance(arr, list) or isinstance(arr, tuple):
-        ret = []
-        for v in arr:
-            ret.append(v[sl])
-        return ret
-    else:
-        return arr[sl]
-
-class AlignedBatchIterator(object):
-    """
-        A simple iterator class, accepts an arbitrary number of numpy arrays.
-        
-        Assumes that all numpy arrays are of equal length.
-        
-        Inspired by the BatchIterator class used in nolearn.
-        https://github.com/dnouri/nolearn
-        Copyright (c) 2012-2015 Daniel Nouri
-        
-        Parameters
-        ----------
-        batch_size : int
-            Size of mini batch
-        shuffle : bool, optional
-            Shuffle data before iterating
-    """
-    
-    def __init__(self, batch_size, shuffle=True):
-        """
-        batch_size - size of every minibatch 
-        shuffle    - whether to shuffle data (default is true)
-        """
-        
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        
-        self.elem_list = None
-
-    def __call__(self, *args):
-        """
-        Note for developers:
-        The __call__ magic function puts all passed arguments into a list
-        elem_list which is used for iteration.
-        
-        It also checks whether all args contain the same number of elements.
-        """
-        self.elem_list = args
-
-        
-        return self
-
-    def __iter__(self):
-        bs = self.batch_size
-        indices = range(len(self.elem_list[0]))
-        if self.shuffle:
-            np.random.shuffle(indices)
-        for i in range((self.n_samples + bs - 1) // bs):
-            sl = indices[slice(i * bs, (i + 1) * bs)]
-            belem_dict = list_slice(self.elem_list, sl)
-            yield belem_dict
-
-    @property
-    def n_samples(self):
-        X = self.elem_list[0]
-        if isinstance(X, dict):
-            return len(list(X.values())[0])
-        else:
-            return len(X)
-
-    @property
-    def num_inputs(self):
-        return len(self.elem_list)
-
-    def __getstate__(self):
-        state = dict(self.__dict__)
-        for attr in ('elem_list',):
-            if attr in state:
-                del state[attr]
-        return state
-
             
 # Custom Batch Iterator called by NeuralNet to provided augmented
 # data in order to reduce overfitting.
@@ -197,52 +186,12 @@ class EarlyStopping(object):
             nn.load_params_from(self.best_weights)
             raise StopIteration()
 
-        
-dropout_net = [
-    (layers.InputLayer, {'shape':(None, 1, 28, 28)}),
-
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 3}),
-    (layers.MaxPool2DLayer, {'pool_size': 2}),
-    (layers.DropoutLayer, {'p': 0.3}),
-
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': 3}),
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': 3}),
-    (layers.MaxPool2DLayer, {'pool_size': 2}),
-    (layers.DropoutLayer, {'p': 0.3}),
-
-    (layers.DenseLayer, {'num_units': 1000, 'nonlinearity': rectify}),
-    (layers.DropoutLayer, {'p': 0.3}),
-    (layers.DenseLayer, {'num_units': 100,   'nonlinearity': softmax}),
-    ]
-
-    
-deep_convnet = [
-    (layers.InputLayer, {'shape': (None, 1, 28, 28)}),
-
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.MaxPool2DLayer, {'pool_size': (2, 2)}),
-
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.MaxPool2DLayer, {'pool_size': (2, 2)}),
-
-    (layers.DenseLayer, {'num_units': 64, 'nonlinearity': rectify}),
-    (layers.DropoutLayer, {'p': 0.5}),
-    (layers.DenseLayer, {'num_units': 64, 'nonlinearity': softmax}),
-    ]
 
 def build_network(layers):    
     return NeuralNet(
         layers = layers,
 
-        batch_iterator_train = AlignedBatchIterator(batch_size=128, shuffle=True),
+        batch_iterator_train = CropBatchIterator(batch_size=128),
 
         update = nesterov_momentum,
         update_learning_rate = theano.shared(float32(0.03)),
@@ -263,7 +212,14 @@ def build_network(layers):
 
 # --------------- Training the network ---------------
 
+
+X_train, y_train, X_test = load_data()
+visualize_data(X_train, y_train)
+
 mnist = build_network(deep_convnet)
 mnist.fit(X_train, y_train)
 mnist.predict(X_test)
+
+plot_loss(nn)
+plt.savefig("../results/mnist/plotloss.png")
 
