@@ -33,8 +33,8 @@ DATA_PATH = '/net/www/jcouvy/data/'
 def load_data():
     # The competition datafiles are in the directory ../input
     # Read training and test data files.
-    train = pd.read_csv(DATA_PATH+"../input/train.csv")
-    test  = pd.read_csv(DATA_PATH+"../input/test.csv")
+    train = pd.read_csv(DATA_PATH+"train.csv")
+    test  = pd.read_csv(DATA_PATH+"test.csv")
 
     train_images = train.iloc[:,1:].values
     train_labels = train[[0]].values.ravel()
@@ -66,38 +66,38 @@ def visualize_data(X, y):
 # --------------- Network architectures ---------------
         
 dropout_net = [
-    (layers.InputLayer, {'shape':(None, 1, 24, 24)}),
+    (layers.InputLayer, {'shape': (None, 1, 28, 28)}),
 
+    (layers.Conv2DLayer, {'num_filters': 16, 'filter_size': 3}),
+    (layers.MaxPool2DLayer, {'pool_size': 2}),
+    (layers.DropoutLayer, {'p': 0.3}),
+
+    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 3}),
     (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 3}),
     (layers.MaxPool2DLayer, {'pool_size': 2}),
     (layers.DropoutLayer, {'p': 0.3}),
 
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': 3}),
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': 3}),
-    (layers.MaxPool2DLayer, {'pool_size': 2}),
+    (layers.DenseLayer, {'num_units': 100, 'nonlinearity': rectify}),
     (layers.DropoutLayer, {'p': 0.3}),
-
-    (layers.DenseLayer, {'num_units': 1000, 'nonlinearity': rectify}),
-    (layers.DropoutLayer, {'p': 0.3}),
-    (layers.DenseLayer, {'num_units': 100,   'nonlinearity': softmax}),
+    (layers.DenseLayer, {'num_units': 10,   'nonlinearity': softmax}),
     ]
     
 
 network_in_network = [
-    (layers.InputLayer,  {'shape': (None, 3, 32, 32)}),
+    (layers.InputLayer,  {'shape': (None, 1, 28, 28)}),
 
     (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 5, 'pad': 2, 'stride': 1}),
-    (layers.NINLayer, {'num_units': 32}),
+    (layers.NINLayer, {'num_units': 16}),
     (layers.NINLayer, {'num_units': 16}),
     (layers.DropoutLayer, {'p': 0.5}),
 
     (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 5, 'pad': 2, 'stride': 1}),
-    (layers.NINLayer, {'num_units': 32}),
+    (layers.NINLayer, {'num_units': 16}),
     (layers.NINLayer, {'num_units': 16}),
     (layers.DropoutLayer, {'p': 0.5}),
         
     (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 5, 'pad': 2, 'stride': 1}),
-    (layers.NINLayer, {'num_units': 32}),
+    (layers.NINLayer, {'num_units': 16}),
     (layers.NINLayer, {'num_units': 10}),
 
     (layers.GlobalPoolLayer, {}),
@@ -192,12 +192,27 @@ class EarlyStopping(object):
             nn.load_params_from(self.best_weights)
             raise StopIteration()
 
+class FlipBatchIterator(BatchIterator):
+    def transform(self, Xb, yb):
+        Xb, yb = super(FlipBatchIterator, self).transform(Xb, yb)
 
+        # Flip half of the images in this batch at random:
+        bs = Xb.shape[0]
+        indices = np.random.choice(bs, bs / 2, replace=False)
+        Xb[indices] = Xb[indices, :, :, ::-1]
+
+        # if yb is not None:
+        #     # Horizontal flip of all x coordinates:
+        #     yb[indices, ::2] = yb[indices, ::2] * -1
+
+        return Xb, yb
+
+        
 def build_network(layers):    
     return NeuralNet(
         layers = layers,
 
-        batch_iterator_train = CropBatchIterator(batch_size=128),
+        batch_iterator_train = FlipBatchIterator(batch_size=128),
 
         update = nesterov_momentum,
         update_learning_rate = theano.shared(float32(0.03)),
@@ -222,7 +237,9 @@ def build_network(layers):
 X_train, y_train, X_test = load_data()
 visualize_data(X_train, y_train)
 
-mnist = build_network(dropout_net)
+mnist = build_network(network_in_network)
 mnist.fit(X_train, y_train)
 mnist.predict(X_test)
 
+visualize.plot_loss(mnist)
+plt.savefig("../results/mnist/plotloss.png")
