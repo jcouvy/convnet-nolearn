@@ -16,4 +16,6 @@ run() {
         else
             echo "Exiting Program"
             rm $DATA_PATH/$filename
+        fi
+    fi
 }
