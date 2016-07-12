@@ -1,3 +1,7 @@
+# Run a python code in Python2.7 and saves the output
+# in a separate text file. In case of execution error
+# the user can quickly fix the code and press return.
+
 #!/bin/bash -i
 DATA_PATH='../results'
 
