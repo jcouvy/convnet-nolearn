@@ -565,12 +565,27 @@ update_momentum <span class="pl-k">=</span> theano.shared(float32(<span class="p
 
 <p>That's it we managed to build a convolutional network able to recognize hand-written digits with an accuracy of 99.3%, pretty close from human performance (one could say better).  </p>
 
-<p>I hope this walk through helped some of you \(◕ ◡ ◕\).</p>
+<p>I hope this walk-through helped some of you \(◕ ◡ ◕\).</p>
 
 <h3>
 <a id="how-to-visualize-your-data" class="anchor" href="#how-to-visualize-your-data" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to visualize your data</h3>
 
 <hr>
+
+<p>We can write a tiny bit a code to see how MNIST really looks like:</p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">def</span> <span class="pl-en">visualize_data</span>(<span class="pl-smi">X</span>, <span class="pl-smi">y</span>):
+    figs, axes <span class="pl-k">=</span> plt.subplots(<span class="pl-c1">4</span>, <span class="pl-c1">4</span>, <span class="pl-v">figsize</span><span class="pl-k">=</span>(<span class="pl-c1">6</span>, <span class="pl-c1">6</span>))
+    <span class="pl-k">for</span> i <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">4</span>):
+        <span class="pl-k">for</span> j <span class="pl-k">in</span> <span class="pl-c1">range</span>(<span class="pl-c1">4</span>):
+            axes[i, j].imshow(<span class="pl-k">-</span><span class="pl-c1">X</span>[i <span class="pl-k">+</span> <span class="pl-c1">4</span> <span class="pl-k">*</span> j].reshape(<span class="pl-c1">28</span>, <span class="pl-c1">28</span>), <span class="pl-v">cmap</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>gray<span class="pl-pds">'</span></span>, <span class="pl-v">interpolation</span><span class="pl-k">=</span><span class="pl-s"><span class="pl-pds">'</span>none<span class="pl-pds">'</span></span>)
+            axes[i, j].set_xticks([])
+            axes[i, j].set_yticks([])
+            axes[i, j].set_title(<span class="pl-s"><span class="pl-pds">"</span>Label: <span class="pl-c1">{}</span><span class="pl-pds">"</span></span>.format(y[i <span class="pl-k">+</span> <span class="pl-c1">4</span> <span class="pl-k">*</span> j]))
+            axes[i, j].axis(<span class="pl-s"><span class="pl-pds">'</span>off<span class="pl-pds">'</span></span>)
+    plt.show()</pre></div>
+
+<p><img src="https://cloud.githubusercontent.com/assets/19994887/16761715/a51e75c0-4821-11e6-8e69-2ab77a8bf394.png" alt="MNIST labels"></p>
 
 <p><code>nolearn</code> offers easy ways of representing the evolution of your network, finding errors ... </p>
 
@@ -587,6 +602,23 @@ update_momentum <span class="pl-k">=</span> theano.shared(float32(<span class="p
 plt.savefig(<span class="pl-s"><span class="pl-pds">"</span>path_to_results/plotloss.png<span class="pl-pds">"</span></span>)</pre></div>
 
 <p>The <a href="https://github.com/dnouri/nolearn/blob/master/nolearn/lasagne/visualize.py">source code</a> can be found on <code>nolearn</code> github repository.</p>
+
+<p>A nice way to visualize the «choices» made by your network is to print a confusion matrix. A pre-built function is available in nolearn (see <a href="http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html">scikit-learn documentation</a>)</p>
+
+<div class="highlight highlight-source-python"><pre><span class="pl-k">from</span> sklearn.metrics <span class="pl-k">import</span> confusion_matrix
+
+prediction <span class="pl-k">=</span> mnist.predict(<span class="pl-c1">X_test</span>)
+expected <span class="pl-k">=</span> y_test
+cm <span class="pl-k">=</span> confusion_matrix(expected, prediction)
+plt.matshow(cm)
+plt.title(<span class="pl-s"><span class="pl-pds">'</span>Confusion matrix<span class="pl-pds">'</span></span>)
+plt.colorbar()
+plt.ylabel(<span class="pl-s"><span class="pl-pds">'</span>True label<span class="pl-pds">'</span></span>)
+plt.xlabel(<span class="pl-s"><span class="pl-pds">'</span>Predicted label<span class="pl-pds">'</span></span>)
+plt.show()
+plt.savefig(<span class="pl-s"><span class="pl-pds">"</span>../results/mnist/confusion_matrix.png<span class="pl-pds">"</span></span>)</pre></div>
+
+<p><img src="https://cloud.githubusercontent.com/assets/19994887/16763383/de1459ba-4828-11e6-9f17-b04c647951a4.png" alt="confusion_matrix"></p>
 
 <h3>
 <a id="a-quick-tip-to-speed-up-your-net" class="anchor" href="#a-quick-tip-to-speed-up-your-net" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>A quick tip to speed up your net</h3>
