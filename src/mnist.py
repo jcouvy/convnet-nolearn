@@ -1,7 +1,3 @@
-import theano
-import numpy as np
-
-import lasagne
 from lasagne import layers
 from lasagne.updates import nesterov_momentum
 from lasagne.nonlinearities import softmax, rectify
@@ -12,61 +8,82 @@ except ImportError:
     Conv2DLayer = layers.Conv2DLayer
     MaxPool2DLayer = layers.MaxPool2DLayer
 
-    
-from nolearn.lasagne import (NeuralNet,
-                             BatchIterator,
-                             PrintLayerInfo,
-                             TrainSplit)
+from nolearn.lasagne import NeuralNet, BatchIterator, PrintLayerInfo
 from nolearn.lasagne import visualize
 
-
-import pandas as pd
-import matplotlib.pyplot as plt
-
 from sklearn.metrics import confusion_matrix
-    
+from sklearn.utils import shuffle
 
-DATA_PATH = '/net/www/jcouvy/data/'
+from urllib import urlretrieve
+
+import os
+import sys
+import gzip
+import cPickle
+
+import theano
+import lasagne
+import numpy as np
+import matplotlib.pyplot as plt
+    
+DATA_URL = 'http://deeplearning.net/data/mnist/mnist.pkl.gz'
+DATA_FILENAME = 'mnist.pkl.gz'
+DATA_PATH = '/net/www/jcouvy/data/mnist/'
 
 # -------------------- Loading Data-set --------------------
 
+def pickle_load(f, encoding):
+    return cPickle.load(f)
+
+def _dl_progress(count, blockSize, totalSize):
+      """ Simple download progress indicator """
+      percent = int(count*blockSize*100/totalSize)
+      sys.stdout.write("\r" + DATA_FILENAME + "...%d%%" % percent)
+      sys.stdout.flush()
+
+def _load_data(url=DATA_URL, filename=DATA_FILENAME, path=DATA_PATH):
+    """Load data from `url` and store the result in `filename`."""
+    if not os.path.exists(filename):
+        print("Downloading MNIST dataset")
+        destfile = os.path.join(path, filename)
+        urlretrieve(url, destfile, reporthook=_dl_progress)
+
+    with gzip.open(destfile, 'rb') as f:
+        return cPickle.load(f)
+
 def load_data():
-    # The competition datafiles are in the directory ../input
-    # Read training and test data files.
-    train = pd.read_csv(DATA_PATH+"train.csv")
-    test  = pd.read_csv(DATA_PATH+"test.csv")
-
-    train_images = train.iloc[:,1:].values
-    train_labels = train[[0]].values.ravel()
-
-    # Reshape and normalize training data
-    X_train = train_images.reshape(train.shape[0], 1, 28, 28).astype(np.float32)
-    X_train -= X_train.mean()
-    X_train /= X_train.std()
-
-    # Reshape and normalize test data
-    X_test = test.values.reshape(test.shape[0], 1, 28, 28).astype(np.float32)
-    X_test -= X_train.mean()
-    X_test /= X_train.std()
-
-    y_train = train_labels.astype(np.int32)
+    """
+    Get and normalize data with labels, split into training, validation and test set.
+    Automatically shuffles the training batch.
+    """
+    data = _load_data()
     
-    return X_train, y_train, X_test
+    X_train, y_train = data[0]
+    X_valid, y_valid = data[1]
+    X_test, y_test = data[2]
 
-def visualize_data(X, y):
-    figs, axes = plt.subplots(4, 4, figsize=(6, 6))
-    for i in range(4):
-        for j in range(4):
-            axes[i, j].imshow(-X[i + 4 * j].reshape(28, 28), cmap='gray', interpolation='none')
-            axes[i, j].set_xticks([])
-            axes[i, j].set_yticks([])
-            axes[i, j].set_title("Label: {}".format(y[i + 4 * j]))
-            axes[i, j].axis('off')
+    X_train = X_train.reshape((-1, 1, 28, 28)).astype(np.float32)
+    X_valid = X_valid.reshape((-1, 1, 28, 28)).astype(np.float32)
+    X_test = X_test.reshape((-1, 1, 28, 28)).astype(np.float32)
+    
+    y_train = y_train.astype(np.int32)
+    y_valid = y_valid.astype(np.int32)
+    y_test = y_test.astype(np.int32)
+
+    X_train, y_train = shuffle(X_train, y_train, random_state=0)
+
+    return X_train, y_train, X_valid, y_valid, X_test, y_test
+
 
 # --------------- Network architectures ---------------
-        
+
+"""
+Write different network implementations to use when
+calling build_network()
+"""
+    
 dropout_net = [
-    (layers.InputLayer, {'shape': (None, 1, 28, 28)}),
+    (layers.InputLayer, {'shape': (None, 1, 26, 26)}),
 
     (layers.Conv2DLayer, {'num_filters': 16, 'filter_size': 3}),
     (layers.MaxPool2DLayer, {'pool_size': 2}),
@@ -84,7 +101,7 @@ dropout_net = [
     
 
 network_in_network = [
-    (layers.InputLayer,  {'shape': (None, 1, 28, 28)}),
+    (layers.InputLayer,  {'shape': (None, 1, 26, 26)}),
 
     (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': 5, 'pad': 2, 'stride': 1}),
     (layers.NINLayer, {'num_units': 16}),
@@ -104,39 +121,21 @@ network_in_network = [
     (layers.DenseLayer, {'num_units':  10, 'nonlinearity': softmax})       
     ]
 
-    
-deep_convnet = [
-    (layers.InputLayer, {'shape': (None, 1, 24, 24)}),
-
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 32, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.MaxPool2DLayer, {'pool_size': (2, 2)}),
-
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.Conv2DLayer, {'num_filters': 64, 'filter_size': (3, 3), 'pad': 1}),
-    (layers.MaxPool2DLayer, {'pool_size': (2, 2)}),
-
-    (layers.DenseLayer, {'num_units': 64, 'nonlinearity': rectify}),
-    (layers.DropoutLayer, {'p': 0.5}),
-    (layers.DenseLayer, {'num_units': 64, 'nonlinearity': softmax}),
-    ]
-
 # -------------------- Building the network -------------------
 
-
-# Converts numbers into 32b floats best used w/ GPUs.
 def float32(k):
+    """
+    Converts numbers into 32b floats best used w/ GPUs
+    """
     return np.cast['float32'](k)
 
-# Allows fine tuning of hyper-parameters during the learning process,
-# Credits to (@Karpathy)
 class AdjustVariable(object):
+    """
+    On-the-fly tweaking of network's hyperparameters
+    (learning rate and momentum) during the training.
+
+    Credits to (@karpathy)
+    """
     def __init__(self, name, start=0.03, stop=0.001):
         self.name = name
         self.start = start
@@ -152,12 +151,13 @@ class AdjustVariable(object):
         getattr(nn, self.name).set_value(new_value)
         
             
-# Custom Batch Iterator called by NeuralNet to provided augmented
-# data in order to reduce overfitting.
-# Randomly crops by 2 pixels the inputed image.
-# Returns the new tensor Xb (X_train) and the labels.
 class CropBatchIterator(BatchIterator):
-    cropX, cropY = 4, 4
+    """
+    Custom Batch Iterator called by NeuralNet to provided augmented
+    data in order to reduce overfitting. Will randomly crop the inputed image
+    by 2 pixels (on-the-fly and CPU driven).
+    """
+    cropX, cropY = 2, 2
     def transform(self, Xb, yb):
         Xb, yb = super(CropBatchIterator, self).transform(Xb, yb)
         shape = Xb.shape[0]
@@ -172,6 +172,13 @@ class CropBatchIterator(BatchIterator):
 
     
 class EarlyStopping(object):
+    """
+    Will stop the training and load back the best weight
+    configuration when no longer improving after a given
+    period of time (patience). Prevents overfitting.
+
+    Credits to (@dnouri)
+    """
     def __init__(self, patience=100):
         self.patience = patience
         self.best_valid = np.inf
@@ -192,27 +199,15 @@ class EarlyStopping(object):
             nn.load_params_from(self.best_weights)
             raise StopIteration()
 
-class FlipBatchIterator(BatchIterator):
-    def transform(self, Xb, yb):
-        Xb, yb = super(FlipBatchIterator, self).transform(Xb, yb)
-
-        # Flip half of the images in this batch at random:
-        bs = Xb.shape[0]
-        indices = np.random.choice(bs, bs / 2, replace=False)
-        Xb[indices] = Xb[indices, :, :, ::-1]
-
-        # if yb is not None:
-        #     # Horizontal flip of all x coordinates:
-        #     yb[indices, ::2] = yb[indices, ::2] * -1
-
-        return Xb, yb
-
         
-def build_network(layers):    
+def build_network(layers):
+    """
+    Builds and returns a NeuralNet object
+    """
     return NeuralNet(
         layers = layers,
 
-        batch_iterator_train = FlipBatchIterator(batch_size=128),
+        batch_iterator_train = CropBatchIterator(batch_size=256),
 
         update = nesterov_momentum,
         update_learning_rate = theano.shared(float32(0.03)),
@@ -221,10 +216,8 @@ def build_network(layers):
         on_epoch_finished=[
             AdjustVariable('update_learning_rate', start=0.03, stop=0.0001),
             AdjustVariable('update_momentum', start=0.9, stop=0.999),
-            EarlyStopping(patience=50),
+            EarlyStopping(patience=10),
             ],
-
-        train_split = TrainSplit(eval_size=0.2),
 
         regression = False,
         max_epochs = 100,
@@ -233,13 +226,52 @@ def build_network(layers):
 
 # --------------- Training the network ---------------
 
+def display_data(X, y):
+    """
+    Plot a 4*4 matrix with MNIST digits and their respective labels.
+    Helps detecting if the shuffle correctly occured.
+    """
+    figs, axes = plt.subplots(4, 4, figsize=(6, 6))
+    for i in range(4):
+        for j in range(4):
+            axes[i, j].imshow(-X[i + 4 * j].reshape(28, 28), cmap='gray', interpolation='none')
+            axes[i, j].set_xticks([])
+            axes[i, j].set_yticks([])
+            axes[i, j].set_title("Label: {}".format(y[i + 4 * j]))
+            axes[i, j].axis('off')
+    plt.show()
 
-X_train, y_train, X_test = load_data()
-visualize_data(X_train, y_train)
+def display_confusion_matrix(test_data, test_labels, save=False):
+    """
+    Plot a matrix representing the choices made by the network
+    on a testing batch.
+    X axis are the predicted values,
+    Y axis are the expected values.
 
-mnist = build_network(network_in_network)
-mnist.fit(X_train, y_train)
-mnist.predict(X_test)
+    If the flag save is set to True, the output will be saved
+    in a .png image.
+    """
+    expected = test_labels
+    predicted = mnist.predict(test_data)
+    cm = confusion_matrix(expected, predicted)
+    plt.matshow(cm)
+    plt.title('Confusion matrix')
+    plt.colorbar()
+    plt.ylabel('Expected label')
+    plt.xlabel('Predicted label')
+    plt.show()
+    if save is True:
+        plt.savefig("../results/mnist/confusion_matrix.png")
 
-visualize.plot_loss(mnist)
-plt.savefig("../results/mnist/plotloss.png")
+        
+def main():
+    X_train, y_train, X_valid, y_valid, X_test, y_test = load_data()
+    net = build_network(dropout_net)
+    net.fit(X_train, y_train)
+
+    display_data(X_train, y_train)
+    display_confusion_matrix(X_test, y_test)
+
+    
+if __name__ == '__main__':
+    main()
