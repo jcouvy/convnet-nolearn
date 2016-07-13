@@ -34,8 +34,8 @@ DATA_PATH = '../input/'
 
 def _dl_progress(count, blockSize, totalSize):
       """ Simple download progress indicator """
-      percent = int(count*blockSize*100/totalSize)
-      sys.stdout.write("\r" + DATA_FILENAME + "...%d%%" % percent)
+      percent = int(count * blockSize * 100 / totalSize)
+      sys.stdout.write("\r" + DATA_FILENAME + "..[.%d%%]" % percent)
       sys.stdout.flush()
 
 def _load_data(url=DATA_URL, filename=DATA_FILENAME, path=DATA_PATH):
