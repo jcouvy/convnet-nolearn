@@ -239,7 +239,7 @@ def display_data(path='../input/cifar-10-python/data_batch_1'):
         index = random.randint(0, len(images))
         example = images[index].reshape(32, 32)
         name = names[index]
-        label = labels[index    ]
+        label = labels[index]
         plt.subplot(1, 3, i+1)
         plt.imshow(example, cmap='gray', interpolation='nearest')
         plt.title("Name: {0}\nLabel: {1}".format(name, label))
