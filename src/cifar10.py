@@ -20,6 +20,7 @@ import os
 import sys
 import tarfile
 import cPickle
+import random
 
 import theano
 import lasagne
@@ -211,7 +212,7 @@ def build_network(layers):
         train_split = TrainSplit(eval_size=0.10), 
 
         regression = False,
-        max_epochs = 1,
+        max_epochs = 300,
         verbose = 2, 
         )
 
@@ -219,7 +220,7 @@ def build_network(layers):
 
 def display_data(path='../input/cifar-10-python/data_batch_1'):
     """
-    Plot 3 grayscale CIFAR-10 images with and their respective name and label.
+    Plot 3 random grayscale CIFAR-10 images with and their respective name and label.
     """
 
     batch = pickle_load(path)
@@ -235,9 +236,10 @@ def display_data(path='../input/cifar-10-python/data_batch_1'):
 
     plt.figure(figsize=(16,5))
     for i in range(3):
-        example = images[i].reshape(32, 32)
-        name = names[i]
-        label = labels[i]
+        index = random.randint(0, len(images))
+        example = images[index].reshape(32, 32)
+        name = names[index]
+        label = labels[index    ]
         plt.subplot(1, 3, i+1)
         plt.imshow(example, cmap='gray', interpolation='nearest')
         plt.title("Name: {0}\nLabel: {1}".format(name, label))
