@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 
 DATA_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz'
 DATA_FILENAME = 'cifar-10-python.tar.gz'
-DATA_PATH = '/net/www/jcouvy/data/'
+DATA_PATH = '../input/'
 
 # --------------- Loading Data-set ---------------
 
@@ -57,8 +57,15 @@ def load_data(path=DATA_PATH):
     """
     Get and normalize data with training and test sets.
     Automatically shuffles the training batch.
+    
+    A single data_batch file is organized as follows:
+
+    10000 x 1024 NumPy array of grayscale image values
+    10000        NumPy array of numerical labels
+    10000        list of image file names
+
     """
-#    data = _load_data()
+    data = _load_data()
     X, y = [], []
     
     src = os.path.join(path, 'cifar-10-python/')
@@ -204,34 +211,46 @@ def build_network(layers):
         train_split = TrainSplit(eval_size=0.10), 
 
         regression = False,
-        max_epochs = 500,
+        max_epochs = 1,
         verbose = 2, 
         )
 
 # --------------- Training the network ---------------
 
-def display_data(X, y):
+def display_data(path='../input/cifar-10-python/data_batch_1'):
     """
-    Plot a 4*4 matrix with MNIST digits and their respective labels.
-    Helps detecting if the shuffle correctly occured.
+    Plot 3 grayscale CIFAR-10 images with and their respective name and label.
     """
-    figs, axes = plt.subplots(4, 4, figsize=(6, 6))
-    for i in range(4):
-        for j in range(4):
-            axes[i, j].imshow(-X[i + 4 * j].reshape(28, 28), cmap='gray', interpolation='none')
-            axes[i, j].set_xticks([])
-            axes[i, j].set_yticks([])
-            axes[i, j].set_title("Label: {}".format(y[i + 4 * j]))
-            axes[i, j].axis('off')
+
+    batch = pickle_load(path)
+    imgdata = batch['data']    
+    # Combine the R, G, and B components together to get grayscale, using the luminosity-preserving formula:
+    # see http://www.johndcook.com/blog/2009/08/24/algorithms-convert-color-grayscale
+    # source: http://home.wlu.edu/~levys/courses/csci315w2016/assignments/cifar10.py (@ Simon D. Levy)
+    grayscale = 0.21*imgdata[:,0:1024] + 0.72*imgdata[:,1024:2048] + 0.07*imgdata[:,2048:3072]
+
+    images = grayscale
+    labels = np.array(batch['labels'])
+    names = batch['filenames']
+
+    plt.figure(figsize=(16,5))
+    for i in range(3):
+        example = images[i].reshape(32, 32)
+        name = names[i]
+        label = labels[i]
+        plt.subplot(1, 3, i+1)
+        plt.imshow(example, cmap='gray', interpolation='nearest')
+        plt.title("Name: {0}\nLabel: {1}".format(name, label))
+        plt.axis("off")
     plt.show()
 
+    
 def main():
     
     X_train, y_train, X_test, y_test = load_data()
     net = build_network(deep_convnet)
+    display_data()
     net.fit(X_train, y_train)
-
-    display_data(X_train, y_train)
 
     
 if __name__ == '__main__':
