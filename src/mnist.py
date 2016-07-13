@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
     
 DATA_URL = 'http://deeplearning.net/data/mnist/mnist.pkl.gz'
 DATA_FILENAME = 'mnist.pkl.gz'
-DATA_PATH = '/net/www/jcouvy/data/mnist/'
+DATA_PATH = '../input/mnist/'
 
 # -------------------- Loading Data-set --------------------
 
