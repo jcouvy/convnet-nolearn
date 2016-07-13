@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 
 DATA_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz'
 DATA_FILENAME = 'cifar-10-python.tar.gz'
-DATA_PATH = '../input/cifar-10/'
+DATA_PATH = '../input/'
 
 # --------------- Loading Data-set ---------------
 
