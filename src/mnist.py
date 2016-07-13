@@ -32,9 +32,6 @@ DATA_PATH = '../input/'
 
 # -------------------- Loading Data-set --------------------
 
-def pickle_load(f, encoding):
-    return cPickle.load(f)
-
 def _dl_progress(count, blockSize, totalSize):
       """ Simple download progress indicator """
       percent = int(count*blockSize*100/totalSize)

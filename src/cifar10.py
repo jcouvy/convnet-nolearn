@@ -28,17 +28,18 @@ import matplotlib.pyplot as plt
 
 DATA_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz'
 DATA_FILENAME = 'cifar-10-python.tar.gz'
-DATA_PATH = '../input/'
+DATA_PATH = '/net/www/jcouvy/data/'
 
 # --------------- Loading Data-set ---------------
 
 def pickle_load(f):
-      return cPickle.load(f)
+      with open(f, 'rb') as pickle_file:
+            return cPickle.load(pickle_file)
 
 def _dl_progress(count, blockSize, totalSize):
       """ Simple download progress indicator """
-      percent = int(count*blockSize*100/totalSize)
-      sys.stdout.write("\r" + DATA_FILENAME + "...%d%%" % percent)
+      percent = int(count * blockSize * 100 / totalSize)
+      sys.stdout.write("\r" + DATA_FILENAME + " ...[%d%%]" % percent)
       sys.stdout.flush()
       
 def _load_data(url=DATA_URL, filename=DATA_FILENAME, path=DATA_PATH):
@@ -49,7 +50,7 @@ def _load_data(url=DATA_URL, filename=DATA_FILENAME, path=DATA_PATH):
         urlretrieve(url, destfile, reporthook=_dl_progress)
 
     archive = tarfile.open(destfile)
-    archive.extractall()
+    archive.extractall(path)
     archive.close()
 
 def load_data(path=DATA_PATH):
@@ -57,21 +58,25 @@ def load_data(path=DATA_PATH):
     Get and normalize data with training and test sets.
     Automatically shuffles the training batch.
     """
-    data = _load_data()
+#    data = _load_data()
     X, y = [], []
     
-    with open(os.path.join(path, 'cifar-10-python'), 'rb'):
-        for i in range(4):
-            data_train = pickle_load(DATA_PATH+'data_batch_'+`i+1`)
-            X.append(data_train['data'])
-            y.append(data_train['labels'])
+    src = os.path.join(path, 'cifar-10-python/')
+    for i in range(5):
+        data_train = pickle_load(src+'data_batch_'+`i+1`)
+        X.append(data_train['data'])
+        y.append(data_train['labels'])
+
+    data_test = pickle_load(src+'test_batch')
         
     X_train = np.concatenate(X).reshape(-1, 3, 32, 32).astype(np.float32)
-    y_train = np.concatenate(y).astype(np.int32)
-
-    data_test = unpickle(DATA_PATH+'test_batch')
     X_test = data_test['data'].reshape(-1, 3, 32, 32).astype(np.float32)
-    y_test = np.array(data_test['labels'])
+
+    y_train = np.concatenate(y).astype(np.int32)
+    y_test = np.array(data_test['labels']).astype(np.int32)
+
+    X_train -= X_train.mean()
+    X_train /= X_train.std()
 
     X_train, y_train = shuffle(X_train, y_train, random_state=0)
     
@@ -221,7 +226,6 @@ def display_data(X, y):
     plt.show()
 
 def main():
-    np.random.seed(1234)
     
     X_train, y_train, X_test, y_test = load_data()
     net = build_network(deep_convnet)
