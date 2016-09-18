@@ -1,3 +1,3 @@
 # Please check the project page: [right here !](https://jcouvy.github.io/convnet-nolearn)
-# Licence
+# License
 See the [LICENSE](./LICENSE) file for license rights and limitations.
